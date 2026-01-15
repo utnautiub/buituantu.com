@@ -9,25 +9,25 @@ export default function manifest(): MetadataRoute.Manifest {
     description: SITE_INFO.description,
     icons: [
       {
-        src: "/images/icon-vector.svg",
+        src: "/assets/images/icon-vector.svg",
         type: "image/svg+xml",
         sizes: "any",
         purpose: "any",
       },
       {
-        src: "/images/icon-192x192.png",
+        src: "/assets/images/icon-192x192.png",
         type: "image/png",
         sizes: "192x192",
         purpose: "any",
       },
       {
-        src: "/images/icon-512x512.png",
+        src: "/assets/images/icon-512x512.png",
         type: "image/png",
         sizes: "512x512",
         purpose: "any",
       },
       {
-        src: "/images/maskable-icon.png",
+        src: "/assets/images/maskable-icon.png",
         type: "image/png",
         sizes: "512x512",
         purpose: "maskable",
@@ -39,25 +39,25 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     screenshots: [
       {
-        src: "/images/screenshot-mobile-dark.webp",
+        src: "/assets/images/screenshot-mobile-dark.webp",
         type: "image/webp",
         sizes: "440x956",
         form_factor: "narrow",
       },
       {
-        src: "/images/screenshot-mobile-light.webp",
+        src: "/assets/images/screenshot-mobile-light.webp",
         type: "image/webp",
         sizes: "440x956",
         form_factor: "narrow",
       },
       {
-        src: "/images/screenshot-desktop-dark.webp",
+        src: "/assets/images/screenshot-desktop-dark.webp",
         type: "image/webp",
         sizes: "1920x1080",
         form_factor: "wide",
       },
       {
-        src: "/images/screenshot-desktop-light.webp",
+        src: "/assets/images/screenshot-desktop-light.webp",
         type: "image/webp",
         sizes: "1920x1080",
         form_factor: "wide",

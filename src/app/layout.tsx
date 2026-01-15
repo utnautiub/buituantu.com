@@ -73,22 +73,22 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    creator: "@iamncdai", // Twitter username
+    creator: "@utnautiub",
     images: [SITE_INFO.ogImage],
   },
   icons: {
     icon: [
       {
-        url: "/images/favicon.ico",
+        url: "/assets/images/favicon.ico",
         sizes: "any",
       },
       {
-        url: "/images/favicon.svg",
+        url: "/assets/images/favicon.svg",
         type: "image/svg+xml",
       },
     ],
     apple: {
-      url: "/images/apple-touch-icon.png",
+      url: "/assets/images/apple-touch-icon.png",
       type: "image/png",
       sizes: "180x180",
     },

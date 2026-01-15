@@ -1,11 +1,11 @@
 import Image from "next/image";
 
 import {
+  Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipRoot,
   TooltipTrigger,
-} from "@/components/base/ui/tooltip";
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { TECH_STACK } from "../data/tech-stack";
@@ -30,51 +30,49 @@ export function TeckStack() {
             {TECH_STACK.map((tech) => {
               return (
                 <li key={tech.key} className="flex">
-                  <TooltipRoot>
-                    <TooltipTrigger
-                      render={
-                        <a
-                          href={tech.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={tech.title}
-                        />
-                      }
-                    >
-                      {tech.theme ? (
-                        <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={tech.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={tech.title}
+                      >
+                        {tech.theme ? (
+                          <>
+                            <Image
+                              src={`/assets/images/tech-stack-icons/${tech.key}-light.svg`}
+                              alt={`${tech.title} light icon`}
+                              width={32}
+                              height={32}
+                              className="hidden [html.light_&]:block"
+                              unoptimized
+                            />
+                            <Image
+                              src={`/assets/images/tech-stack-icons/${tech.key}-dark.svg`}
+                              alt={`${tech.title} dark icon`}
+                              width={32}
+                              height={32}
+                              className="hidden [html.dark_&]:block"
+                              unoptimized
+                            />
+                          </>
+                        ) : (
                           <Image
-                            src={`/assets/images/tech-stack-icons/${tech.key}-light.svg`}
-                            alt={`${tech.title} light icon`}
+                            src={`/assets/images/tech-stack-icons/${tech.key}.svg`}
+                            alt={`${tech.title} icon`}
                             width={32}
                             height={32}
-                            className="hidden [html.light_&]:block"
                             unoptimized
                           />
-                          <Image
-                            src={`/assets/images/tech-stack-icons/${tech.key}-dark.svg`}
-                            alt={`${tech.title} dark icon`}
-                            width={32}
-                            height={32}
-                            className="hidden [html.dark_&]:block"
-                            unoptimized
-                          />
-                        </>
-                      ) : (
-                        <Image
-                          src={`/assets/images/tech-stack-icons/${tech.key}.svg`}
-                          alt={`${tech.title} icon`}
-                          width={32}
-                          height={32}
-                          unoptimized
-                        />
-                      )}
+                        )}
+                      </a>
                     </TooltipTrigger>
 
                     <TooltipContent>
                       <p>{tech.title}</p>
                     </TooltipContent>
-                  </TooltipRoot>
+                  </Tooltip>
                 </li>
               );
             })}
