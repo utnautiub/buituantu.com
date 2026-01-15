@@ -2,6 +2,20 @@ import type { TechStack } from "../types/tech-stack";
 
 export const TECH_STACK: TechStack[] = [
   {
+    key: "aws",
+    title: "AWS",
+    href: "https://aws.amazon.com/",
+    categories: ["Cloud", "AWS"],
+    theme: false,
+  },
+  {
+    key: "n8n",
+    title: "n8n",
+    href: "https://n8n.io/",
+    categories: ["Tools", "Automation"],
+    theme: false,
+  },
+  {
     key: "chatgpt",
     title: "ChatGPT",
     href: "https://chatgpt.com/",
@@ -23,6 +37,13 @@ export const TECH_STACK: TechStack[] = [
     theme: false,
   },
   {
+    key: "grok",
+    title: "Grok",
+    href: "https://grok.com/",
+    categories: ["Tools", "AI"],
+    theme: true,
+  },
+  {
     key: "meta",
     title: "Meta AI",
     href: "https://meta.ai",
@@ -42,20 +63,6 @@ export const TECH_STACK: TechStack[] = [
     href: "https://antigravity.google/",
     categories: ["Tools", "AI"],
     theme: false,
-  },
-  {
-    key: "githubcopilot",
-    title: "GitHub Copilot",
-    href: "https://github.com/features/copilot",
-    categories: ["Tools", "AI"],
-    theme: true,
-  },
-  {
-    key: "midjourney",
-    title: "Midjourney",
-    href: "https://www.midjourney.com/",
-    categories: ["Tools", "AI"],
-    theme: true,
   },
   {
     key: "perplexity",

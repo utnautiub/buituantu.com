@@ -1,3 +1,5 @@
+"use client";
+
 import { GraduationCapIcon, InfinityIcon } from "lucide-react";
 import Image from "next/image";
 import React from "react";
@@ -12,6 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tag } from "@/components/ui/tag";
 import { ProseMono } from "@/components/ui/typography";
+import { useIsClient } from "@/hooks/use-is-client";
 import { cn } from "@/lib/utils";
 
 import type { Education } from "../../types/education";
@@ -19,6 +22,7 @@ import type { Education } from "../../types/education";
 export function EducationItem({ education }: { education: Education }) {
   const { start, end } = education.period;
   const isOngoing = !end;
+  const isClient = useIsClient();
 
   return (
     <div className="screen-line-after space-y-4 py-4">
@@ -122,7 +126,13 @@ export function EducationItem({ education }: { education: Education }) {
               </div>
             </CollapsibleTrigger>
 
-            <CollapsibleContent className="overflow-hidden duration-300 data-[state=closed]:animate-collapsible-fade-up data-[state=open]:animate-collapsible-fade-down">
+            <CollapsibleContent
+              className={cn(
+                "overflow-hidden duration-300",
+                isClient &&
+                  "data-[state=closed]:animate-collapsible-fade-up data-[state=open]:animate-collapsible-fade-down"
+              )}
+            >
               {education.description && (
                 <ProseMono className="pt-2 pl-9">
                   <Markdown>{education.description}</Markdown>

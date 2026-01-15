@@ -1,3 +1,5 @@
+"use client";
+
 import { InfinityIcon } from "lucide-react";
 import React from "react";
 
@@ -11,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tag } from "@/components/ui/tag";
 import { ProseMono } from "@/components/ui/typography";
+import { useIsClient } from "@/hooks/use-is-client";
 import { cn } from "@/lib/utils";
 
 import type { ExperiencePosition } from "../../types/experiences";
@@ -23,6 +26,7 @@ export function ExperiencePositionItem({
 }) {
   const { start, end } = position.employmentPeriod;
   const isOngoing = !end;
+  const isClient = useIsClient();
 
   return (
     <CollapsibleWithContext defaultOpen={position.isExpanded} asChild>
@@ -93,7 +97,13 @@ export function ExperiencePositionItem({
           </div>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="overflow-hidden duration-300 data-[state=closed]:animate-collapsible-fade-up data-[state=open]:animate-collapsible-fade-down">
+        <CollapsibleContent
+          className={cn(
+            "overflow-hidden duration-300",
+            isClient &&
+              "data-[state=closed]:animate-collapsible-fade-up data-[state=open]:animate-collapsible-fade-down"
+          )}
+        >
           {position.description && (
             <ProseMono className="pt-2 pl-9">
               <Markdown>{position.description}</Markdown>

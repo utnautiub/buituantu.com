@@ -55,4 +55,33 @@ export const EXPERIENCES: Experience[] = [
       },
     ],
   },
+  {
+    id: "career-break",
+    companyName: "Career Break",
+    companyLogo: "/assets/images/companies/not_found.svg",
+    isCurrentEmployer: true,
+    positions: [
+      {
+        id: "job-seeking",
+        title: "Self-learning",
+        employmentPeriod: {
+          start: "07.2025",
+          end: "Present",
+        },
+        employmentType: "Career Break",
+        description: `- Actively seeking new opportunities in Frontend / Backend / Fullstack roles.
+- Reviewing and strengthening core knowledge in web development.
+- Building and refining personal projects and portfolio.
+- Exploring new technologies and improving problem-solving and system thinking skills.`,
+        icon: "business",
+        skills: [
+          "Self-learning",
+          "Problem Solving",
+          "System Thinking",
+          "Research",
+          "Portfolio Building",
+        ],
+      },
+    ],
+  },
 ];
