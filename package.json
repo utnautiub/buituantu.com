@@ -36,7 +36,8 @@
     "generate-libphonenumber-metadata": "libphonenumber-metadata-generator ./src/assets/libphonenumber.metadata.json --countries VN --extended",
     "upgrade:next": "npx @next/codemod@latest upgrade latest",
     "upgrade:tailwind": "npx @tailwindcss/upgrade@latest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",

@@ -1,0 +1,14 @@
+{
+    "buildCommand": "pnpm build",
+    "installCommand": "pnpm install --ignore-scripts=false",
+    "env": {
+        "HUSKY": "0",
+        "CI": "true"
+    },
+    "build": {
+        "env": {
+            "HUSKY": "0",
+            "ENABLE_EXPERIMENTAL_COREPACK": "0"
+        }
+    }
+}
