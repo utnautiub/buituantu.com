@@ -1,10 +1,10 @@
 import type { User } from "@/features/portfolio/types/user";
 
 export const USER = {
-  firstName: "Chánh Đại",
-  lastName: "Nguyễn",
-  displayName: "Chánh Đại",
-  username: "ncdai",
+  firstName: "Tú",
+  lastName: "Bùi Tuấn",
+  displayName: "Bùi Tuấn Tú",
+  username: "buituantu",
   gender: "male",
   pronouns: "he/him",
   bio: "Creating with code. Small details matter.",
@@ -13,26 +13,16 @@ export const USER = {
     "Design Engineer",
     "Open Source Contributor",
   ],
-  address: "Ho Chi Minh City, Viet Nam",
-  phoneNumber: "Kzg0Nzc3ODg4MTQ4", // E.164 format, base64 encoded (https://t.io.vn/base64-string-converter)
-  email: "ZGFpQGNoYW5oZGFpLmNvbQ==", // base64 encoded
-  website: "https://chanhdai.com",
-  jobTitle: "Design Engineer",
+  address: "Thai Nguyen, Viet Nam",
+  phoneNumber: "Kzg0MzM5MTAyMDAz", // E.164 format, base64 encoded (https://t.io.vn/base64-string-converter)
+  email: "dXRuYXV0aXViQGdtYWlsLmNvbQ==", // base64 encoded
+  website: "https://buituantu.com",
+  jobTitle: "Software Engineer",
   jobs: [
     {
-      title: "Senior Frontend Developer & UI Lead",
-      company: "Simplamo",
-      website: "https://simplamo.com?ref=IN-926722",
-    },
-    {
-      title: "Founder",
-      company: "Quaric",
-      website: "https://quaric.com",
-    },
-    {
-      title: "Design Engineer",
-      company: "Shadcraft",
-      website: "https://shadcraft.com",
+      title: "Unemployed",
+      company: "Tesla",
+      website: "https://buituantu.com",
     },
   ],
   //   about: `
@@ -46,33 +36,19 @@ export const USER = {
 
   // Let's connect and collaborate!
   //   `,
-  about: `
-- **Design Engineer** with 5+ years of experience, known for pixel-perfect execution and strong attention to small details.
-- Skilled in **Next.js**, **React**, **TypeScript**, and modern front-end technologies; building high-quality, user-centric web and mobile applications.
-- Passionate about exploring new technologies and turning ideas into reality through polished, thoughtfully crafted personal projects.
-- Creator of [ZaDark](https://zadark.com) (2022): enhances the Zalo experience on PC & Web
-  - 80k+ downloads on [SourceForge](https://sourceforge.net/projects/zadark)
-  - 30k+ active users on the [Chrome Web Store](https://chromewebstore.google.com/detail/llfhpkkeljlgnjgkholeppfnepmjppob)
-- Creator of [React Wheel Picker](https://react-wheel-picker.chanhdai.com): iOS-like wheel picker with inertia scrolling & infinite loop
-  - 10k+ weekly downloads on [npm](https://www.npmjs.com/package/@ncdai/react-wheel-picker)
-  - [▲Vercel OSS Program](https://vercel.com/blog/summer-2025-oss-program#react-wheel-picker) summer 2025 cohort
+  about: `No about yet.
 `,
-  avatar: "https://assets.chanhdai.com/images/chanhdai-avatar-ghibli.webp",
-  ogImage:
-    "https://assets.chanhdai.com/images/screenshot-og-image-light.png?v=4",
-  namePronunciationUrl: "/audio/chanhdai.mp3",
+  avatar: "/assets/images/avatar.jpg",
+  ogImage: "/assets/images/og-image.png",
+  namePronunciationUrl: "/assets/audio/name-pronunciation.mp3",
   timeZone: "Asia/Ho_Chi_Minh",
   keywords: [
-    "ncdai",
-    "nguyenchanhdai",
-    "nguyen chanh dai",
-    "chanhdai",
-    "chanh dai",
-    "iamncdai",
-    "quaric",
-    "zadark",
-    "nguyễn chánh đại",
-    "chánh đại",
+    "btt",
+    "buituantu",
+    "bui tuan tu",
+    "utnautiub",
+    "bui.tuan.tu",
+    "iambtt",
   ],
-  dateCreated: "2023-10-20", // YYYY-MM-DD
+  dateCreated: "2026-01-14", // YYYY-MM-DD
 } satisfies User;

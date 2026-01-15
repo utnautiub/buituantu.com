@@ -3,9 +3,9 @@ import { getAllPosts } from "@/features/blog/data/posts";
 
 const allPosts = getAllPosts();
 
-const content = `# chanhdai.com
+const content = `# buituantu.com
 
-> A minimal, pixel-perfect dev portfolio, component registry, and blog to showcase my work as a Design Engineer.
+> A minimal, pixel-perfect dev portfolio, component registry, and blog to showcase my work as a Full-stack Developer.
 
 - [About](${SITE_INFO.url}/about.md): A quick intro to me, my tech stack, and how to connect.
 - [Experience](${SITE_INFO.url}/experience.md): Highlights from my career and key roles I've taken on.

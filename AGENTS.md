@@ -1,15 +1,35 @@
-# AI Agent Guidelines for chanhdai.com
+# AI Agent Guidelines for buituantu.com
 
-This guide provides essential information for AI agents working with the chanhdai.com codebase - a Next.js dev portfolio, blog, and component registry website.
+> **📖 For AI Agents**: This document provides comprehensive context about the buituantu.com codebase. Read this file first to understand project structure, coding standards, and best practices before making any changes.
+
+## How to Use This Guide (for AI Agents)
+
+**Before responding to any user request**:
+1. ✅ Read relevant sections of this guide based on the task
+2. ✅ Follow the MUST/SHOULD/NEVER guidelines strictly
+3. ✅ Reference the project structure when navigating files
+4. ✅ Check "Auto-generated Files" section - NEVER edit those files
+5. ✅ Use the commands in "Development Guidelines" for builds/tests
+
+**Key Sections by Task Type**:
+- 🎨 UI/Component work → Read "Web Interface Guidelines"
+- 📝 Content updates → Read "Working with Content" + "User Portfolio"
+- 🔧 New components → Read "Component Registry System" + "Component Development"
+- ⚙️ Configuration → Read "Environment & Configuration"
+- 📦 Dependencies → Read "Registry Dependencies"
+
+---
 
 ## Project Overview
 
-**chanhdai.com** is a minimal, pixel-perfect dev portfolio, component registry, and blog built with modern web technologies. It serves as:
+**buituantu.com** is a minimal, pixel-perfect dev portfolio, component registry, and blog built with modern web technologies. It serves as:
 
-- Personal portfolio for Nguyen Chanh Dai (@ncdai)
+- Personal portfolio for Bùi Tuấn Tú (@utnautiub)
 - Component registry using shadcn/ui system
 - Blog with MDX content
 - Showcase for custom React components
+
+**Original Template**: Forked from [chanhdai.com](https://github.com/ncdai/chanhdai.com) by Nguyen Chanh Dai (@ncdai)
 
 ### Key Features
 
@@ -46,16 +66,25 @@ src/
 │   └── rss/               # RSS feed generation
 ├── components/            # Shared UI components
 ├── registry/              # Component registry source
-├── __registry__/          # Auto-generated registry files (DO NOT EDIT)
+├── __registry__/          # Auto-generated registry files (⚠️ DO NOT EDIT)
 ├── features/              # Feature-based modules
 │   ├── blog/              # Blog functionality
 │   └── portfolio/         # User portfolio data
 ├── hooks/                 # Custom React hooks
 ├── lib/                   # Utility libraries
 └── styles/                # Global styles
-packages/
-└── ncdai/                 # Publishable component package
+public/
+└── assets/                # Static assets (images, audio, etc.)
+    ├── images/            # All image assets
+    │   ├── tech-stack-icons/  # Tech stack SVG icons
+    │   ├── link-icons/        # Social link icons
+    │   ├── companies/         # Company/issuer logos
+    │   └── project-logos/     # Project logos
+    ├── audio/             # Audio files
+    └── brand/             # Brand assets (logos, marks)
 ```
+
+> **⚠️ Important**: The `packages/` folder (if exists) contains optional CLI tools for npm publishing. It can be safely removed if not publishing components to npm.
 
 ### Important Files
 
@@ -308,14 +337,22 @@ Concise rules for building accessible, fast, delightful UIs. Use MUST/SHOULD/NEV
 
 **Portfolio Data Files** (`src/features/portfolio/data/`):
 
+> **🎯 For AI**: These files contain user's personal information. Always ask before modifying unless explicitly requested.
+
 - `user.ts` - Core personal information, bio, contact details, job history
-- `experiences.ts` - Detailed work experience, education, company information
+- `experiences.ts` - Detailed work experience (company information)
+- `education.ts` - Educational background, degrees, institutions
 - `projects.ts` - Portfolio projects with descriptions, links, skills, logos
-- `tech-stack.ts` - Technology stack, programming languages, tools, frameworks
+- `tech-stack.ts` - Technology stack, programming languages, tools, frameworks (37+ items)
 - `awards.ts` - Competition awards, prizes, academic achievements, certificates
 - `certifications.ts` - Professional certifications, course completions, credentials
 - `social-links.ts` - Social media profiles, professional networks, contact links
 - `testimonials.ts` - Professional recommendations, endorsements from colleagues and clients
+
+**Important Data Formats**:
+- Contact info (email/phone) may be base64 encoded for spam protection
+- All external image URLs have been migrated to local `/assets/` folder
+- Tech stack icons support both single theme and dual theme (light/dark variants)
 
 ## Environment & Configuration
 
@@ -378,37 +415,107 @@ The project uses PostHog for analytics tracking. Events are defined in `src/lib/
 - Theme colors: `META_THEME_COLORS`
 - GitHub repo: `SOURCE_CODE_GITHUB_REPO`
 
-## Common Tasks
+## Common Tasks (AI Agent Quick Reference)
 
-### Adding a New Component
+### Task 1: Adding a New Component
 
+**Steps**:
 1. Create component directory: `src/registry/[name]/`
 2. Implement component with proper TypeScript types
 3. Add to `src/registry/registry-components.ts`
 4. Create example in `src/registry/examples/`
 5. Build registry: `pnpm registry:build`
 
-### Updating User Information
+**AI Checklist**:
+- ✅ Use TypeScript with explicit types
+- ✅ Follow naming convention: kebab-case for files, PascalCase for components
+- ✅ Support both light/dark themes if visual component
+- ✅ Add proper ARIA labels for accessibility
+- ✅ Test keyboard navigation
 
-Edit `src/features/portfolio/data/user.ts` with new:
+### Task 2: Updating User Portfolio Data
 
-- Personal information
-- Job details
-- Project descriptions
-- Contact information
+**Files to Edit** (`src/features/portfolio/data/`):
+- `user.ts` - Name, bio, avatar, contact
+- `experiences.ts` - Work experience
+- `education.ts` - Educational background
+- `projects.ts` - Portfolio projects
+- `tech-stack.ts` - Technologies (37+ items)
+- `social-links.ts` - Social profiles
 
-### Adding Blog Posts
+**AI Guidelines**:
+- 🔒 Email/phone should be base64 encoded: use https://t.io.vn/base64-string-converter
+- 🖼️ Images use local paths: `/assets/images/[category]/[filename]`
+- 📝 Markdown supported in description fields
+- 🏷️ Keep skill tags consistent across entries
 
-1. Create MDX file in `src/features/blog/content/`
-2. Include frontmatter metadata
+### Task 3: Managing Assets (Images, Icons, Logos)
+
+**Current Asset Structure**:
+```
+public/assets/
+├── images/
+│   ├── avatar.webp                    # User avatar
+│   ├── og-image.png                   # SEO/social preview
+│   ├── tech-stack-icons/*.svg         # 37 tech icons
+│   ├── link-icons/*.webp             # Social media icons
+│   ├── companies/*.{svg,webp}         # Company logos
+│   └── project-logos/*.{svg,webp}    # Project logos
+├── audio/
+│   └── chanhdai.mp3                   # Name pronunciation
+└── brand/
+    └── *.svg                          # Brand assets (reference)
+```
+
+**AI Guidelines**:
+- ✅ All images stored locally (no external CDN)
+- ✅ Use `/assets/images/` prefix for all image paths
+- ✅ Tech stack icons support theme variants: `[name]-light.svg` / `[name]-dark.svg`
+- ✅ Optimize images before adding (use WebP for photos, SVG for logos)
+- ⚠️ DON'T use external URLs (assets.chanhdai.com was migrated)
+
+### Task 4: Adding/Editing Blog Posts
+
+**Steps**:
+1. Create MDX file: `src/features/blog/content/[slug].mdx`
+2. Add frontmatter metadata
 3. Use custom components for enhanced content
+4. Images should be in `public/assets/images/blog/`
 
-### Styling Guidelines
+**Frontmatter Template**:
+```yaml
+---
+title: "Your Blog Title"
+description: "Brief description for SEO"
+date: "2026-01-15"
+published: true
+image: "/assets/images/blog/your-image.webp"
+---
+```
 
+**AI Guidelines**:
+- ✅ Use custom MDX components from `src/components/mdx.tsx`
+- ✅ Add OG image for social sharing
+- ✅ Follow Web Interface Guidelines for content structure
+- ✅ Use proper heading hierarchy (h2 → h3 → h4)
+
+### Task 5: Styling & Theming
+
+**Guidelines**:
 - Use Tailwind CSS v4 syntax
-- Follow existing color scheme (zinc-based)
-- Support dark/light modes
+- Follow zinc-based color scheme
+- Support both light/dark modes
 - Use CSS variables for theme colors
+- Test with `prefers-reduced-motion`
+
+**Theme Toggle**:
+- Hotkey: Press `D` (supports Vietnamese `Đ`)
+- Component: `src/components/theme-toggle.tsx`
+
+**AI Reminders**:
+- 🎨 Use semantic color tokens: `bg-background`, `text-foreground`
+- 🌗 Test both themes before submitting
+- ♿ Maintain WCAG AA contrast ratios minimum
 
 ## Important Notes
 
@@ -430,18 +537,33 @@ Edit `src/features/portfolio/data/user.ts` with new:
 - Images optimized with Next.js Image component
 - MDX content is statically generated
 
-### Personal Information
+### Personal Information & Assets
 
-When adapting this codebase, ensure ALL personal information is replaced:
+> **🎯 For AI**: This project has been customized for Bùi Tuấn Tú. Original template by @ncdai.
 
-**Key Areas to Update**:
+**Current Owner Information**:
+- Name: Bùi Tuấn Tú
+- Username: @utnautiub
+- Email: utnautiub@gmail.com
+- GitHub: https://github.com/utnautiub
+- Website: https://buituantu.com
 
-- All files in `src/features/portfolio/data/` (see User Portfolio section above)
-- `src/config/site.ts` - Site name, navigation, GitHub repo, UTM params
-- Blog posts in `src/features/blog/content/`
-- Asset URLs (images, logos, audio files) throughout the codebase
+**Key Areas Already Updated**:
+- ✅ `package.json` - Package name, author, repository
+- ✅ `src/config/site.ts` - Site URL, GitHub repo, UTM params
+- ✅ All portfolio data files in `src/features/portfolio/data/`
+- ✅ Image URLs migrated from external CDN to local `/public/assets/`
 
-**Important**: Portfolio data contains encoded contact information (base64) and specific asset URLs that must be updated for your own use.
+**Assets Management**:
+- All images stored locally in `public/assets/` (88+ files)
+- Tech stack icons: 37 SVG files (single + dual theme variants)
+- Use PowerShell script `download-assets.ps1` to download reference assets
+- Images should be replaced with user's own content (avatar, screenshots, logos)
+
+**Important Notes**:
+- Contact info (email/phone) is base64 encoded for spam protection
+- Registry namespace uses `@ncdai` for component compatibility with original template
+- Blog posts should be replaced with user's own content
 
 ## Deployment
 
@@ -460,6 +582,81 @@ pnpm start          # Start production server
 pnpm preview        # Build and preview locally
 ```
 
+## AI Agent Quick Commands Reference
+
+### Development Commands
+```bash
+pnpm dev              # Start dev server (port 1408)
+pnpm build            # Production build
+pnpm preview          # Build + preview locally
+pnpm lint             # Run ESLint
+pnpm lint:fix         # Auto-fix lint issues
+pnpm check-types      # TypeScript type checking
+pnpm format:write     # Format code with Prettier
+```
+
+### Registry Commands
+```bash
+pnpm registry:build                # Build complete registry
+pnpm registry:internal:build       # Build internal registry only
+```
+
+### Asset Management Commands
+```bash
+.\download-assets.ps1              # Download reference assets (PowerShell)
+```
+
+## AI Agent Troubleshooting Guide
+
+### Issue: "Module not found" or Import Errors
+**Solution**: 
+1. Check if file exists at the path
+2. Verify import path uses correct alias (`@/` for `src/`)
+3. Check `tsconfig.json` for path mappings
+
+### Issue: Registry Build Fails
+**Solution**:
+1. Verify component structure matches registry schema
+2. Check `src/registry/registry-*.ts` files for syntax errors
+3. Don't edit files in `src/__registry__/` or `public/r/`
+4. Run `pnpm registry:internal:build` first to see specific errors
+
+### Issue: Images Not Loading
+**Solution**:
+1. Verify path starts with `/assets/images/`
+2. Check file exists in `public/assets/images/`
+3. For tech stack: ensure icon exists for the `key` value
+4. For dual theme icons: check both `-light.svg` and `-dark.svg` exist
+
+### Issue: Theme Toggle Not Working
+**Solution**:
+1. Check `useTheme()` hook is imported from `next-themes`
+2. Verify component is wrapped in `ThemeProvider`
+3. Test both `KeyD` detection for Vietnamese keyboard
+
+### Issue: Build Errors Related to Sharp/Images
+**Solution**:
+1. Ensure `sharp` is installed: `pnpm install sharp`
+2. Check Next.js Image component has required props (width, height, alt)
+3. For remote images: add domain to `next.config.ts` remotePatterns
+
+## Code Quality Checklist (AI Self-Review)
+
+Before submitting any code changes, verify:
+
+- [ ] TypeScript types are explicit and correct
+- [ ] No ESLint errors (`pnpm lint`)
+- [ ] Code is formatted (`pnpm format:write`)
+- [ ] Type checking passes (`pnpm check-types`)
+- [ ] Comments explain "why", not "what"
+- [ ] Accessibility: ARIA labels, keyboard navigation, focus management
+- [ ] Responsive: Works on mobile, tablet, desktop
+- [ ] Theme support: Tested in both light and dark modes
+- [ ] Performance: No unnecessary re-renders, images optimized
+- [ ] No console.log() statements left in code
+- [ ] Assets use local paths (no external CDN URLs)
+- [ ] Registry auto-generated files were NOT manually edited
+
 ## Contributing
 
 ### Code Quality
@@ -467,13 +664,24 @@ pnpm preview        # Build and preview locally
 - Run `pnpm lint` before committing
 - Use `pnpm format:write` for code formatting
 - Check types with `pnpm check-types`
+- Follow Web Interface Guidelines strictly
 
 ### Testing Registry Components
 
 - Test components in isolation
-- Verify registry build process
-- Test installation via shadcn CLI
+- Verify registry build process: `pnpm registry:build`
+- Test installation via shadcn CLI: `npx shadcn add @ncdai/[component]`
+- Check component works in both themes
 
 ---
 
-**Note**: This is a personal portfolio project. When using as a template, ensure all personal information is removed and replaced with your own content.
+## About This Project
+
+**buituantu.com** is a personal portfolio website forked from [chanhdai.com](https://github.com/ncdai/chanhdai.com).
+
+- **Owner**: Bùi Tuấn Tú (@utnautiub)
+- **Original Author**: Nguyen Chanh Dai (@ncdai)
+- **License**: MIT
+- **Tech Stack**: Next.js 16, Tailwind CSS v4, TypeScript, shadcn/ui
+
+**For AI Agents**: This document is maintained to help AI assistants work effectively with this codebase. If you find any information outdated or missing, please note it in your response to the user.

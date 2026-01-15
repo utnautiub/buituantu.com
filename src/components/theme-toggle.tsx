@@ -31,27 +31,24 @@ export function ThemeToggle() {
     );
   }, [resolvedTheme, setTheme, setMetaColor, playClick]);
 
-  useHotkeys("d", switchTheme);
+  useHotkeys("*", (e) => {
+    if (e.code === "KeyD" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      switchTheme();
+    }
+  });
 
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={switchTheme}
-            // onClick={() => {
-            //   if (!document.startViewTransition) switchTheme();
-            //   document.startViewTransition(switchTheme);
-            // }}
-          />
-        }
-      >
-        <MoonIcon className="relative hidden after:absolute after:-inset-2 [html.dark_&]:block" />
-        <SunMediumIcon className="relative hidden after:absolute after:-inset-2 [html.light_&]:block" />
-        <span className="sr-only">Theme Toggle</span>
-      </TooltipTrigger>
+      <div data-has-sound="true">
+        <TooltipTrigger
+          render={<Button variant="ghost" size="icon" onClick={switchTheme} />}
+        >
+          <MoonIcon className="relative hidden after:absolute after:-inset-2 [html.dark_&]:block" />
+          <SunMediumIcon className="relative hidden after:absolute after:-inset-2 [html.light_&]:block" />
+          <span className="sr-only">Theme Toggle</span>
+        </TooltipTrigger>
+      </div>
 
       <TooltipContent className="pr-2 pl-3">
         <div className="flex items-center gap-3">

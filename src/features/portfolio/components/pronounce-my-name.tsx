@@ -28,6 +28,7 @@ export function PronounceMyName({
           name: "play_name_pronunciation",
         });
       }}
+      data-has-sound="true"
     >
       <Volume2Icon className="size-4.5" />
       <span className="sr-only">Pronounce my name</span>
