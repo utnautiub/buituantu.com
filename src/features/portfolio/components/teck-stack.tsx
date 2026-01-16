@@ -28,6 +28,8 @@ export function TeckStack() {
         <TooltipProvider>
           <ul className="flex flex-wrap gap-4 select-none">
             {TECH_STACK.map((tech) => {
+              const IconComponent = tech.iconComponent;
+
               return (
                 <li key={tech.key} className="flex">
                   <Tooltip>
@@ -38,7 +40,9 @@ export function TeckStack() {
                         rel="noopener noreferrer"
                         aria-label={tech.title}
                       >
-                        {tech.theme ? (
+                        {IconComponent ? (
+                          <IconComponent size={32} />
+                        ) : tech.theme ? (
                           <>
                             <Image
                               src={`/assets/images/tech-stack-icons/${tech.key}-light.svg`}
