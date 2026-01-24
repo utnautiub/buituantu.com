@@ -1,5 +1,4 @@
 import { USER } from "@/features/portfolio/data/user";
-import { FlipSentences } from "@/registry/flip-sentences";
 
 import { PronounceMyName } from "./pronounce-my-name";
 import { VerifiedIcon } from "./verified-icon";
@@ -68,16 +67,9 @@ export function ProfileHeader() {
           </div>
 
           <div className="h-12.5 border-t border-edge py-1 pl-4 sm:h-9">
-            <FlipSentences
-              className="font-mono text-sm text-balance text-muted-foreground"
-              variants={{
-                initial: { y: -10, opacity: 0 },
-                animate: { y: -1, opacity: 1 },
-                exit: { y: 10, opacity: 0 },
-              }}
-            >
-              {USER.flipSentences}
-            </FlipSentences>
+            <p className="font-mono text-sm text-balance text-muted-foreground">
+              {USER.flipSentences[0]}
+            </p>
           </div>
         </div>
       </div>

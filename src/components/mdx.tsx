@@ -15,7 +15,6 @@ import {
   TabsTrigger,
 } from "@/components/base/ui/tabs";
 import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper";
-import { ComponentSource } from "@/components/component-source";
 import {
   Table,
   TableBody,
@@ -27,26 +26,13 @@ import {
 import { Code, Heading } from "@/components/ui/typography";
 import { UTM_PARAMS } from "@/config/site";
 import { rehypeAddQueryParams } from "@/lib/rehype-add-query-params";
-import { rehypeComponent } from "@/lib/rehype-component";
 import { rehypeNpmCommand } from "@/lib/rehype-npm-command";
 import { remarkCodeImport } from "@/lib/remark-code-import";
 import { cn } from "@/lib/utils";
-import {
-  Testimonial,
-  TestimonialAuthor,
-  TestimonialAuthorName,
-  TestimonialAuthorTagline,
-  TestimonialAvatar,
-  TestimonialAvatarImg,
-  TestimonialAvatarRing,
-  TestimonialQuote,
-  TestimonialVerifiedBadge,
-} from "@/registry/testimonials-marquee";
 import type { NpmCommands } from "@/types/unist";
 
 import { CodeBlockCommand } from "./code-block-command";
 import { CodeTabs } from "./code-tabs";
-import { ComponentPreviewV2 as ComponentPreview } from "./component-preview-v2";
 import { CopyButton } from "./copy-button";
 import { FramedImage, IframeEmbed, YouTubeEmbed } from "./embed";
 import { getIconForLanguageExtension, Icons } from "./icons";
@@ -132,8 +118,6 @@ const components: MDXRemoteProps["components"] = {
     );
   },
   code: Code,
-  ComponentPreview,
-  ComponentSource,
   CodeCollapsibleWrapper,
   CodeTabs,
   Steps: (props) => (
@@ -167,15 +151,6 @@ const components: MDXRemoteProps["components"] = {
   YouTubeEmbed,
   IframeEmbed,
   FramedImage,
-  Testimonial,
-  TestimonialAuthor,
-  TestimonialAuthorTagline,
-  TestimonialAuthorName,
-  TestimonialAvatar,
-  TestimonialAvatarImg,
-  TestimonialAvatarRing,
-  TestimonialQuote,
-  TestimonialVerifiedBadge,
 };
 
 const options: MDXRemoteProps["options"] = {
@@ -187,7 +162,6 @@ const options: MDXRemoteProps["options"] = {
         { target: "_blank", rel: "nofollow noopener noreferrer" },
       ],
       rehypeSlug,
-      rehypeComponent,
       () => (tree) => {
         visit(tree, (node) => {
           if (node?.type === "element" && node?.tagName === "pre") {

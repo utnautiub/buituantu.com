@@ -37,8 +37,6 @@
     "./src/scripts/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "./src/__registry__",
-    "packages"
+    "node_modules"
   ]
 }

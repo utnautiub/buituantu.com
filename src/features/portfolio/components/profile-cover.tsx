@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 
-import { BrandContextMenu } from "@/components/brand-context-menu";
-import { cn } from "@/lib/utils";
 import {
   AppleHelloEnglishEffect,
   AppleHelloVietnameseEffect,
-} from "@/registry/apple-hello-effect/apple-hello-effect";
+} from "@/components/apple-hello-effect";
+import { BrandContextMenu } from "@/components/brand-context-menu";
+import { cn } from "@/lib/utils";
 
 export function ProfileCover() {
   const [showVietnamese, setShowVietnamese] = useState(true);
