@@ -13,17 +13,31 @@ export function NotFound({ className }: { className?: string }) {
       )}
     >
       <svg
-        className="h-28 w-full text-border"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 514 258"
+        className="h-32 w-auto text-border"
+        viewBox="0 0 192 192"
         fill="none"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M65 193v64h128v-64H65Zm0 0H1V65h64m0 128V65m384 0H321v128h128m0-128V1H257v256h192v-64m0-128v128m0-128h64v128h-64M65 65h128V1H65v64Z"
+        <g
           stroke="currentColor"
           strokeWidth="1"
           vectorEffect="non-scaling-stroke"
-        />
+          fill="none"
+        >
+          <rect x="54.3333" y="12.75" width="33.3333" height="33.3333" />
+          <rect x="87.6667" y="12.75" width="33.3333" height="33.3333" />
+          <rect x="121" y="12.75" width="33.3333" height="33.3333" />
+          <rect x="137.667" y="46.0833" width="33.3333" height="33.3333" />
+          <rect x="121" y="71.0835" width="16.6667" height="16.6667" />
+          <rect x="87.6667" y="87.75" width="16.6667" height="16.6667" />
+          <rect x="104.333" y="87.75" width="16.6667" height="16.6667" />
+          <rect x="121" y="87.75" width="16.6667" height="16.6667" />
+          <rect x="121" y="104.417" width="16.6667" height="16.6667" />
+          <rect x="137.667" y="112.75" width="33.3333" height="33.3333" />
+          <rect x="87.6667" y="146.083" width="33.3333" height="33.3333" />
+          <rect x="121" y="146.083" width="33.3333" height="33.3333" />
+          <rect x="54.3333" y="146.083" width="33.3333" height="33.3333" />
+        </g>
       </svg>
 
       <h1 className="my-6 text-8xl font-medium tracking-tighter tabular-nums">
