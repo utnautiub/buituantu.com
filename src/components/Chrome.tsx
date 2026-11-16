@@ -1,0 +1,223 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { RAIL, useLang } from "../i18n";
+import { usePrefs } from "../prefs";
+import { S } from "../store";
+import { createLayerScene } from "../scene/layers";
+import { initAurora } from "../lib/aurora";
+import type { Where } from "../lib/useScrollState";
+
+const NAV: { href: string; key: "nav.1" | "nav.2" | "nav.3" | "nav.4" | "nav.s" | "nav.c" }[] = [
+  { href: "l1", key: "nav.1" }, { href: "l2", key: "nav.2" }, { href: "l3", key: "nav.3" }, { href: "l4", key: "nav.4" }, { href: "stack", key: "nav.s" }, { href: "contact", key: "nav.c" },
+];
+
+export function Nav({ where, bar, onPalette }: { where: Where; bar: RefObject<HTMLDivElement | null>; onPalette: () => void }) {
+  const { lang, t, toggle } = useLang();
+  const p = usePrefs();
+  // One underline that slides between the links instead of each link owning its own.
+  const links = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = links.current!, a = el.querySelector<HTMLElement>('[aria-current="true"]');
+    el.style.setProperty("--io", a ? "1" : "0");
+    if (a) { el.style.setProperty("--ix", `${a.offsetLeft + 10}px`); el.style.setProperty("--iw", `${a.offsetWidth - 20}px`); }
+  }, [where.id, lang]);
+  return (
+    <header className="nav">
+      <div className="wrap nav__in">
+        <a className="brand" href="#top" aria-label="Bùi Tuấn Tú"><span className="brand__mark">BT</span><span>Bùi Tuấn Tú</span></a>
+        <nav className="nav__links" aria-label="Primary" ref={links}>
+          {NAV.map((n) => <a key={n.href} href={`#${n.href}`} aria-current={where.id === n.href ? "true" : undefined}>{t(n.key)}</a>)}
+          <span className="nav__ind" />
+        </nav>
+        <div className="nav__act">
+          <button className="ibtn ibtn--k" onClick={onPalette} aria-label="Open command palette"><Ico d="m5 7 5 5-5 5M13 17h6" /> <kbd>⌘K</kbd></button>
+          <button className="ibtn" onClick={toggle} aria-label="Switch language" title={t("pal.lang")}>
+            <Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3c2.6 2.7 3.8 5.7 3.8 9s-1.2 6.300-3.8 9c-2.600-2.700-3.800-5.700-3.800-9S9.400 5.700 12 3Z" /> {lang.toUpperCase()}
+          </button>
+          <button className="ibtn ibtn--i" onClick={() => p.flip("theme")} aria-label={t("p.theme")} title={`${t("p.theme")}: ${t(p.theme === "dark" ? "p.dark" : "p.light")}`}>
+            {p.theme === "dark" ? <Ico d="M20 14.500A8 8 0 0 1 9.500 4a8 8 0 1 0 10.500 10.500Z" /> : <Ico d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22M5 5l1.800 1.800M17.200 17.200 19 19M19 5l-1.800 1.800M6.800 17.200 5 19" />}
+          </button>
+          <button className="ibtn ibtn--i" onClick={() => p.flip("sound")} aria-pressed={p.sound} aria-label={t("p.sound")} title={`${t("p.sound")}: ${t(p.sound ? "p.on" : "p.off")}`}>
+            <Ico d={p.sound ? "M4 9.500v5h3.500L12 18.500v-13L7.500 9.500H4ZM15.500 9a4.200 4.200 0 0 1 0 6M18 6.500a8 8 0 0 1 0 11" : "M4 9.500v5h3.500L12 18.500v-13L7.500 9.500H4ZM16 9.500l5 5M21 9.500l-5 5"} />
+          </button>
+          <button className="ibtn ibtn--i wide" onClick={() => p.flip("motion")} aria-pressed={p.motion} aria-label={t("p.motion")} title={`${t("p.motion")}: ${t(p.motion ? "p.on" : "p.off")}`}>
+            <Ico d={p.motion ? "M3 12c2.200-5 4.400-5 6.600 0s4.400 5 6.600 0 3.300-3.800 4.800-1.500" : "M3 12h18"} />
+          </button>
+          <button className="ibtn ibtn--i wide" onClick={() => p.flip("hud")} aria-pressed={p.hud} aria-label={t("p.hud")} title={`${t("p.hud")}: ${t(p.hud ? "p.on" : "p.off")}`}>
+            <Ico d="M5 20v-5M10 20V9M15 20v-8M20 20V5" />
+          </button>
+        </div>
+      </div>
+      <div className="prog" ref={bar} />
+    </header>
+  );
+}
+
+/** The layer rail. While scrolling it marks the current layer; in the closing overview, when the whole
+ *  stack is back on screen, it turns into the stack's legend: every layer lit, joined by one line, and
+ *  hovering an entry picks that slab out on the right. */
+export function Depth({ where, focus, onFocus }: { where: Where; focus: number; onFocus: (i: number) => void }) {
+  const { t } = useLang();
+  const onStack = where.id === "top" || /^l\d$/.test(where.id);
+  return (
+    <nav className="depth" aria-label="Layers" onPointerLeave={() => onFocus(-1)}>
+      {RAIL.map((r, j) => (
+        <a key={r.id} href={`#${r.id}`} className={`${onStack && !where.over && r.layer === where.index ? "on" : ""}${focus === r.layer ? " foc" : ""}`}
+          style={{ "--c": r.color, "--j": j } as CSSProperties}
+          onPointerEnter={() => onFocus(r.layer)} onFocus={() => onFocus(r.layer)} onBlur={() => onFocus(-1)}>
+          <i>{r.code}</i><span>{t(r.key)}</span>
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+/** The fixed 3D backdrop, with a CSS version of the stack underneath for when WebGL is not available. */
+export function Stage({ where, focus }: { where: Where; focus: number }) {
+  const canvas = useRef<HTMLCanvasElement>(null), aurora = useRef<HTMLCanvasElement>(null);
+  useEffect(() => initAurora(aurora.current!), []);
+  useEffect(() => {
+    const root = document.documentElement, off = () => { delete root.dataset.gl; };
+    let scene: { dispose(): void } | null = null, dead = false;
+    createLayerScene(canvas.current!, off)
+      .then((s) => { if (dead) s.dispose(); else { scene = s; root.dataset.gl = "on"; } })
+      .catch((e) => { console.warn("3D scene unavailable, using the CSS stack", e); off(); });
+    return () => { dead = true; scene?.dispose(); off(); };
+  }, []);
+  return (
+    <div className="stage" aria-hidden="true">
+      <canvas className="aurora" ref={aurora} />
+      <canvas className="gl" ref={canvas} />
+      <div className="cstack-wrap">
+        <div className={`cstack${focus >= 0 ? " has-focus" : ""}`}>
+          {[4, 3, 2, 1, 0].map((layer, j) => (
+            <div key={layer} className={`cl${!where.over && layer < where.index ? " is-up" : ""}${focus === layer ? " is-cur" : ""}`} style={{ "--i": j, "--c": `var(--l${layer})` } as CSSProperties}>
+              L{layer}<i>{["Surface", "University", "2NF Software", "Service", "Signal"][layer]}</i>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Ico = ({ d }: { d: string }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.900" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
+
+export function Footer() {
+  const { t } = useLang();
+  const p = usePrefs();
+  const onoff = (v: boolean) => t(v ? "p.on" : "p.off");
+  return (
+    <footer className="foot"><div className="wrap">
+      <span className="mono">© {new Date().getFullYear()} Bùi Tuấn Tú · buituantu.com · {t("ft.hint")}</span>
+      <span className="foot__prefs">
+        <button className="tbtn" onClick={() => p.flip("theme")}>{t("p.theme")}: {t(p.theme === "dark" ? "p.dark" : "p.light")}</button>
+        <button className="tbtn" aria-pressed={p.motion} onClick={() => p.flip("motion")}>{t("p.motion")} {onoff(p.motion)}</button>
+        <button className="tbtn" aria-pressed={p.sound} onClick={() => p.flip("sound")}>{t("p.sound")} {onoff(p.sound)}</button>
+        <button className="tbtn" aria-pressed={p.hud} onClick={() => p.flip("hud")}>{t("p.hud")} {onoff(p.hud)}</button>
+      </span>
+    </div></footer>
+  );
+}
+
+/** The opening sequence: five layer-coloured bands fill the screen while a counter runs, then slide away. */
+export function Boot({ onDone }: { onDone: () => void }) {
+  const [phase, setPhase] = useState<"load" | "out" | "gone">(S.rm ? "gone" : "load");
+  const num = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (S.rm) { onDone(); return; }
+    const t0 = performance.now(), dur = 950; let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      if (num.current) num.current.textContent = String(Math.round(e * 100)).padStart(3, "0");
+      if (p < 1) raf = requestAnimationFrame(tick); else { setPhase("out"); onDone(); }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [onDone]);
+  useEffect(() => { if (phase !== "out") return; const id = setTimeout(() => setPhase("gone"), 1100); return () => clearTimeout(id); }, [phase]);
+  if (phase === "gone") return null;
+  return (
+    <div className={`boot${phase === "out" ? " out" : ""}`} aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => <i key={i} style={{ "--i": i, "--c": `var(--l${i})` } as CSSProperties} />)}
+      <div className="boot__meta"><span>BTT / LAYER DIVE</span><b ref={num}>000</b></div>
+    </div>
+  );
+}
+
+/** A small live frame-rate readout for this tab. Its loop only runs while it is switched on. */
+export function Hud() {
+  const { t } = useLang();
+  const p = usePrefs();
+  const out = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!p.hud) return;
+    let raf = 0, frames = 0, t0 = performance.now();
+    const loop = (now: number) => {
+      frames++;
+      if (now - t0 >= 500) { if (out.current) out.current.textContent = String(Math.round((frames * 1000) / (now - t0))); frames = 0; t0 = now; }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [p.hud]);
+  if (!p.hud) return null;
+  return (
+    <div className="hud" role="status" aria-live="off">
+      <i /><span>{t("hud.fps")} <b ref={out}>–</b> fps</span>
+      <button onClick={() => p.flip("hud")} aria-label={t("hud.close")}>×</button>
+    </div>
+  );
+}
+
+export function Palette({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { lang, t, toggle } = useLang();
+  const [q, setQ] = useState(""), [sel, setSel] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const cmds = useMemo(() => {
+    const go = (id: string) => () => { location.hash = id; };
+    const ext = (u: string) => () => { window.open(u, "_blank", "noopener"); };
+    const L = (e: string, v: string) => (lang === "vi" ? v : e);
+    return [
+      [`L0 · ${t("d.0")}`, "cd /", go("top")],
+      [`L1 · ${t("l1.h2")}`, "cd l1", go("l1")], ["L2 · 2NF Software", "cd l2", go("l2")],
+      [`L3 · ${t("l3.h2")}`, "cd l3", go("l3")], [`L4 · ${t("l4.h2")}`, "cd l4", go("l4")],
+      [t("nav.s"), "ls kit", go("stack")], [t("nav.c"), "ping", go("contact")],
+      [t("pal.morse"), "tx", () => { location.hash = "l4"; setTimeout(() => window.dispatchEvent(new Event("btt:morse")), 700); }],
+      [t("pal.lang"), "EN/VI", toggle],
+      ["GitHub", "@utnautiub", ext("https://github.com/utnautiub")], ["LinkedIn", "@buituantu", ext("https://linkedin.com/in/buituantu")],
+      ["Facebook", L("profile", "trang cá nhân"), ext("https://www.facebook.com/BUlTUANTU/")],
+    ] as [string, string, () => void][];
+  }, [lang, t, toggle]);
+  const shown = cmds.filter((c) => `${c[0]} ${c[1]}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const cur = Math.min(sel, Math.max(0, shown.length - 1));
+
+  useEffect(() => { if (open) { setQ(""); setSel(0); input.current?.focus(); } }, [open]);
+  const run = (i: number) => { const c = shown[i]; if (c) { onClose(); c[2](); } };
+
+  return (
+    <div className={`pal${open ? " open" : ""}`} role="dialog" aria-modal="true" aria-label="Command palette" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="box">
+        <input ref={input} value={q} placeholder={t("pal.ph")} autoComplete="off" spellCheck={false}
+          onChange={(e) => { setQ(e.target.value); setSel(0); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClose();
+            else if (e.key === "ArrowDown") { e.preventDefault(); setSel(Math.min(shown.length - 1, cur + 1)); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); setSel(Math.max(0, cur - 1)); }
+            else if (e.key === "Enter") { e.preventDefault(); run(cur); }
+          }} />
+        <ul>
+          {shown.length ? shown.map((c, i) => <li key={c[0]} className={i === cur ? "sel" : ""} onClick={() => run(i)} onPointerMove={() => i !== cur && setSel(i)}><span>{c[0]}</span><small>{c[1]}</small></li>)
+            : <li><small>{t("pal.none")}</small></li>}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Marks which layer the rail is pointing at, for the scene and for React. */
+export function useFocus(over: boolean) {
+  const [focus, set] = useState(-1);
+  const setFocus = (i: number) => { const v = over ? i : -1; S.focus = v; S.kick(); set(v); };
+  useEffect(() => { if (!over) { S.focus = -1; set(-1); } }, [over]);
+  return [focus, setFocus] as const;
+}
