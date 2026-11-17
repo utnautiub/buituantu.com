@@ -5,7 +5,60 @@ export const TEX_H = 512;
 export const TILE_W = 288;
 export const TILE_H = 168;
 
-const NAMES = ["SURFACE", "THUY LOI UNIVERSITY", "2NF SOFTWARE", "MILITARY SERVICE", "SIGNAL OFFICER SCHOOL"];
+/** School logos, as sent, placed in the empty corner of their slab (texture pixels; height sets the size). */
+/** `light`: the logo's detail is drawn in light colours on a dark ground, so the light parts become the lines. */
+const LOGOS: Record<number, { src: string; x: number; y: number; h: number; light?: boolean }> = {
+  1: { src: "/logos/thuyloi.png", x: 64, y: 300, h: 126 },              // under the STUDENT table, left of the dashed link
+  4: { src: "/logos/signal.png", x: 40, y: 34, h: 176, light: true },   // top left, clear of the antenna's waves
+};
+const logoImgs: Record<number, HTMLImageElement> = {};
+/** Start loading the logos; `done` runs once each one is ready, so the slab can be repainted with it. */
+export function loadLogos(done: () => void) {
+  for (const [k, l] of Object.entries(LOGOS)) {
+    if (logoImgs[+k]) continue;
+    const img = new Image(); img.decoding = "async"; img.src = l.src;
+    img.onload = () => { logoImgs[+k] = img; done(); };
+  }
+}
+/** The logo as an etching in the glass: the file's own shapes, recoloured to the slab's colour. Dark ink
+ *  becomes bright lines, white becomes a faint frost, so it reads like it was cut into the slab. */
+const etched = new Map<string, HTMLCanvasElement>();
+function etch(img: HTMLImageElement, c: string, light = false) {
+  const key = img.src.length + c + light;
+  let out = etched.get(key);
+  if (out) return out;
+  const w = img.naturalWidth, h = img.naturalHeight;
+  out = document.createElement("canvas"); out.width = w; out.height = h;
+  const g = out.getContext("2d")!;
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, w, h), px = d.data, n = parseInt(c.slice(1), 16);
+  const r = (n >> 16) & 255, gr = (n >> 8) & 255, b = n & 255;
+  for (let k = 0; k < px.length; k += 4) {
+    const a = px[k + 3] / 255;
+    if (!a) continue;
+    const lum = (0.2126 * px[k] + 0.7152 * px[k + 1] + 0.0722 * px[k + 2]) / 255;
+    // how much of a line this pixel is: the dark parts of a dark-on-light logo, the light parts of a light-on-dark one
+    const ink = light ? Math.min(1, Math.max(0, (lum - 0.42) * 1.9)) : Math.min(1, Math.max(0, (1 - lum) * 1.35));
+    px[k] = r + (255 - r) * ink * 0.25; px[k + 1] = gr + (255 - gr) * ink * 0.25; px[k + 2] = b + (255 - b) * ink * 0.25;
+    px[k + 3] = 255 * a * ((light ? 0.2 : 0.16) + ink * (light ? 0.8 : 0.84));
+  }
+  g.putImageData(d, 0, 0);
+  etched.set(key, out);
+  return out;
+}
+function drawLogo(g: CanvasRenderingContext2D, i: number, c: string) {
+  const l = LOGOS[i], img = logoImgs[i];
+  if (!l || !img) return;
+  const w = (img.naturalWidth / img.naturalHeight) * l.h, art = etch(img, c, l.light);
+  g.save();
+  g.shadowColor = rgba(c, 0.85); g.shadowBlur = 18;
+  g.drawImage(art, l.x, l.y, w, l.h);
+  g.shadowBlur = 0; g.globalAlpha = 0.55; g.globalCompositeOperation = "lighter";
+  g.drawImage(art, l.x, l.y, w, l.h); // a second pass, added on top, makes the lines glow
+  g.restore();
+}
+
+const NAMES = ["SURFACE", "THUY LOI UNIVERSITY", "2NF SOFTWARE", "MILITARY SERVICE", "TELECOMMUNICATIONS UNIVERSITY"];
 const MONO = "'Geist Mono', ui-monospace, Menlo, Consolas, monospace";
 
 const rgba = (hex: string, a: number) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
@@ -23,6 +76,7 @@ export function paintLayer(g: CanvasRenderingContext2D, i: number, c: string) {
   g.font = `500 17px ${MONO}`; g.fillStyle = a(0.75); g.fillText(NAMES[i], 92, TH - 37);
   g.lineCap = "round"; g.lineJoin = "round";
   [page, diagram, code, contours, signal][i](g, a);
+  drawLogo(g, i, c);
 }
 
 /** A small labelled tile for one tool or one contact. */

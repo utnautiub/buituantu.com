@@ -73,7 +73,7 @@ export async function runShowcase(api: ShowcaseApi) {
     dispatchEvent(new CustomEvent("btt:tab", { detail: "fe" })); await wait(900);
     say("L3 · Military service", "L3 · Nghĩa vụ quân sự"); await glide(y("l3"), 1500); await wait(1700);
 
-    say("L4 · Signal", "L4 · Thông tin"); await glide(y("l4"), 1500); await wait(500);
+    say("L4 · Telecom", "L4 · Thông tin"); await glide(y("l4"), 1500); await wait(500);
     dispatchEvent(new CustomEvent("btt:morse", { detail: "BTT" })); await wait(4200);
 
     say("Tools", "Công cụ"); await glide(y("stack", 0.45), 1600); await wait(700);

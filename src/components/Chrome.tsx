@@ -93,7 +93,7 @@ export function Stage({ where, focus }: { where: Where; focus: number }) {
         <div className={`cstack${focus >= 0 ? " has-focus" : ""}`}>
           {[4, 3, 2, 1, 0].map((layer, j) => (
             <div key={layer} className={`cl${!where.over && layer < where.index ? " is-up" : ""}${focus === layer ? " is-cur" : ""}`} style={{ "--i": j, "--c": `var(--l${layer})` } as CSSProperties}>
-              L{layer}<i>{["Surface", "University", "2NF Software", "Service", "Signal"][layer]}</i>
+              L{layer}<i>{["Surface", "University", "2NF Software", "Service", "Telecom"][layer]}</i>
             </div>
           ))}
         </div>

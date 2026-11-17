@@ -4,7 +4,7 @@
 // (then hand over to the CSS stack) when the measured frame time says the device cannot keep up.
 import { S } from "../store";
 import { LINKS, TOOLS } from "../data";
-import { paintLayer, paintTile, TEX_H, TEX_W, TILE_H, TILE_W } from "./textures";
+import { loadLogos, paintLayer, paintTile, TEX_H, TEX_W, TILE_H, TILE_W } from "./textures";
 
 export interface LayerScene { dispose(): void }
 
@@ -453,6 +453,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   S.retheme = retheme;
 
   paintAll(); resize(); update(0); renderer.render(scene, camera); kick();
+  loadLogos(() => { if (!dead) paintAll(); });
   document.fonts?.ready.then(() => { if (!dead) paintAll(); });
 
   return {

@@ -28,14 +28,14 @@ export const Palette = memo(function Palette({ open, onClose, notify, onExplore,
     switch (c) {
       case "help": return [L("commands:", "các lệnh:"), "  whoami · ls · cat <file> · cd <l0…l4|tools|contact> · pwd · date · echo <text>",
         "  demo · explore · theme · motion · sound · hud · lang · pulse · morse <text> · email", "  matrix · party · sudo hire me · clear · exit"];
-      case "whoami": return ["Bùi Tuấn Tú", L("software engineer · second-degree student, Signal Officer School", "kỹ sư phần mềm · học viên văn bằng 2, Trường Sĩ quan Thông tin")];
+      case "whoami": return ["Bùi Tuấn Tú", L("software engineer · second-degree student, Telecommunications University", "kỹ sư phần mềm · học viên văn bằng 2, Trường Sĩ quan Thông tin")];
       case "ls": return ["about.txt  route.txt  stack.txt  contact.txt"];
       case "pwd": return [`/layers/${S.f > 0.5 ? "overview" : `L${Math.round(S.d)}`}`];
       case "date": return [new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-GB", { timeZone: "Asia/Ho_Chi_Minh" }) + " (Asia/Ho_Chi_Minh)"];
       case "echo": return [arg];
       case "cat": switch (arg.replace(/\.txt$/, "")) {
         case "about": return ["Creating with code. Small details matter."];
-        case "route": return [`L1  ${t("l1.h2").padEnd(26)}2021 – 2025`, "L2  2NF Software · Frontend     12.2023 – 05.2024", "L2  2NF Software · Backend      06.2024 – 06.2025", `L3  ${L("Military service", "Nghĩa vụ quân sự")}`, `L4  ${L("Signal Officer School", "Trường Sĩ quan Thông tin")}  ← ${L("now", "hiện tại")}`];
+        case "route": return [`L1  ${t("l1.h2").padEnd(26)}2021 – 2025`, "L2  2NF Software · Frontend     12.2023 – 05.2024", "L2  2NF Software · Backend      06.2024 – 06.2025", `L3  ${L("Military service", "Nghĩa vụ quân sự")}`, `L4  ${L("Telecommunications University", "Trường Sĩ quan Thông tin")}  ← ${L("now", "hiện tại")}`];
         case "stack": return TOOLS.map((x) => `${x.name.padEnd(12)}${lang === "vi" ? x.what[1] : x.what[0]}`);
         case "contact": return LINKS.map((l) => `${l.name.padEnd(10)}${l.href}`);
         default: return [`cat: ${arg || "?"}: ${L("no such file. Try: ls", "không có file này. Thử: ls")}`];
