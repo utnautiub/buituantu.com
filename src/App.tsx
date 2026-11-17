@@ -9,6 +9,8 @@ import { S } from "./store";
 import { useScrollState } from "./lib/useScrollState";
 import { Boot, Depth, Footer, Gauge, Hud, Nav, Stage, useFocus } from "./components/Chrome";
 import { Palette } from "./components/Palette";
+import { Explore, useExplore } from "./components/Explore";
+import { runShowcase, stopShowcase } from "./lib/showcase";
 import { Contact, Hero, Service, Signal, Tools, University, Work } from "./components/Sections";
 
 export function App() {
@@ -38,15 +40,53 @@ export function App() {
 
   const main = useRef<HTMLElement>(null), bar = useRef<HTMLDivElement>(null), ring = useRef<HTMLDivElement>(null), line = useRef<HTMLDivElement>(null);
   // The page comes alive when the opening sequence lets go.
+  const [bootKey, setBootKey] = useState(0);
   const onReady = useCallback(() => {
-    if (S.ready) return;
+    if (S.ready) {
+      // a replay of the opening: the stack drops in again and the headline flies back together
+      S.replay++; S.kick(); dispatchEvent(new Event("btt:replay"));
+      return;
+    }
     S.ready = true; document.body.classList.add("ready"); S.kick();
     dispatchEvent(new Event("btt:ready"));
   }, []);
   const mark = useRef<HTMLDivElement>(null), read = useRef<HTMLElement>(null), trail = useRef<HTMLCanvasElement>(null);
   const where = useScrollState(main, bar, lang, mark, read);
   const [focus, setFocus] = useFocus(where.over);
+  const setFocusRef = useRef(setFocus); setFocusRef.current = setFocus;
+  const langRef = useRef(lang); langRef.current = lang;
+  const [exploring, setExploring] = useExplore();
+  const [demo, setDemo] = useState<{ label: string; p: number } | null>(null);
+  const startShowcase = useCallback(() => {
+    void runShowcase({
+      replayOpening: () => setBootKey((k) => k + 1),
+      setExplore: setExploring,
+      setFocus: (i) => { S.focus = i; S.kick(); setFocusRef.current(i); },
+      status: (label, p) => setDemo(label === null ? null : { label, p }),
+      L: (en, vi) => (DICT[langRef.current] === DICT.vi ? vi : en),
+    });
+  }, [setExploring]);
   const [palette, setPalette] = useState(false);
+  const openExplore = useCallback(() => setExploring(true), [setExploring]);
+  const closeExplore = useCallback(() => setExploring(false), [setExploring]);
+  // E opens explore mode from anywhere (outside text fields)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as Element).closest?.("input,textarea")) return;
+      if (e.key.toLowerCase() === "e" && document.documentElement.dataset.gl === "on") setExploring((o) => !o);
+    };
+    // Double-click (or double-tap) on empty page space opens it too; inside it, a double-click resets the view.
+    const onDbl = (e: MouseEvent) => {
+      if (document.documentElement.dataset.gl !== "on") return;
+      if ((e.target as Element).closest?.("a,button,input,textarea,.card,.lk,.chip,h1,h2,h3,p,li,.pal,.xui__panel,.xui__bar,.foot")) return;
+      getSelection()?.removeAllRanges();
+      if (S.explore) S.xreset++; else setExploring(true);
+      S.kick();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("dblclick", onDbl);
+    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("dblclick", onDbl); };
+  }, [setExploring]);
   const [toast, setToast] = useState("");
   const openPalette = useCallback(() => setPalette(true), []);
   const closePalette = useCallback(() => setPalette(false), []);
@@ -99,7 +139,7 @@ export function App() {
   return (
     <PrefsCtx.Provider value={prefsApi}><LangCtx.Provider value={api}>
       <a className="skip" href="#main">{api.t("skip")}</a>
-      <Boot onDone={onReady} />
+      <Boot key={bootKey} onDone={onReady} />
       <Stage where={where} focus={focus} />
       <div className="sweep" ref={line} aria-hidden="true" />
       <div className="txglow" aria-hidden="true" />
@@ -118,7 +158,15 @@ export function App() {
         <Contact notify={setToast} />
       </main>
       <Footer />
-      <Palette open={palette} onClose={closePalette} notify={setToast} />
+      <Palette open={palette} onClose={closePalette} notify={setToast} onExplore={openExplore} onShowcase={startShowcase} />
+      {demo && (
+        <div className="demo" role="status">
+          <span className="demo__dot" /><b>{api.t("demo.title")}</b><span className="demo__lbl" key={demo.label}>{demo.label}</span>
+          <button onClick={stopShowcase}>{api.t("demo.stop")} <kbd>Esc</kbd></button>
+          <i style={{ transform: `scaleX(${demo.p})` }} />
+        </div>
+      )}
+      <Explore open={exploring} onClose={closeExplore} />
       <Hud />
       <div className={`toast${toast ? " on" : ""}`} role="status">{toast}</div>
     </LangCtx.Provider></PrefsCtx.Provider>

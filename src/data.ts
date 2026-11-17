@@ -26,15 +26,16 @@ export const EXP = {
 };
 export type ExpKey = keyof typeof EXP;
 
-export const TOOLS: [name: string, kind: string, href: string][] = [
-  ["AWS", "Cloud", "https://aws.amazon.com/"],
-  ["Cloudflare", "CDN", "https://cloudflare.com/"],
-  ["Vercel", "Deployment", "https://vercel.com/"],
-  ["GitHub", "Version Control", "https://github.com/"],
-  ["n8n", "Automation", "https://n8n.io/"],
-  ["Figma", "Design", "https://figma.com/"],
-  ["Notion", "Productivity", "https://notion.com/"],
-  ["CapCut", "Video Editing", "https://capcut.com/"],
+/** What this page itself is built with, and what each piece does on it. */
+export const TOOLS: { name: string; kind: Pair; what: Pair; href: string }[] = [
+  { name: "React", kind: ["Interface", "Giao diện"], what: ["Every section, the palette and explore mode are React components.", "Mọi phần của trang, bảng lệnh và chế độ khám phá đều là component React."], href: "https://react.dev/" },
+  { name: "TypeScript", kind: ["Language", "Ngôn ngữ"], what: ["All of the code, typed, so the 3D scene and the page agree on their shared state.", "Toàn bộ mã nguồn, có kiểu, để cảnh 3D và trang thống nhất về trạng thái dùng chung."], href: "https://www.typescriptlang.org/" },
+  { name: "Vite", kind: ["Build", "Đóng gói"], what: ["Dev server and the production build: one small, static site.", "Máy chủ khi phát triển và bản dựng cuối: một trang tĩnh gọn nhẹ."], href: "https://vite.dev/" },
+  { name: "three.js", kind: ["3D", "3D"], what: ["The five glass layers, the packets, the sparks and explore mode.", "Năm tấm kính, các hạt rơi, vòng tia sáng và chế độ khám phá."], href: "https://threejs.org/" },
+  { name: "GLSL", kind: ["Shader", "Shader"], what: ["The aurora behind the page, one small shader drawn at low resolution.", "Lớp cực quang phía sau trang, một shader nhỏ vẽ ở độ phân giải thấp."], href: "https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)" },
+  { name: "Canvas 2D", kind: ["Drawing", "Vẽ"], what: ["The art on every slab, the cursor trail and the matrix rain, drawn in code.", "Họa tiết trên từng tấm kính, vệt đuôi con trỏ và mưa ký tự, đều vẽ bằng code."], href: "https://developer.mozilla.org/docs/Web/API/Canvas_API" },
+  { name: "Web Audio", kind: ["Sound", "Âm thanh"], what: ["Every click, note and Morse tone is synthesised live. No audio files.", "Mọi tiếng bấm, nốt nhạc và tiếng Morse đều tổng hợp trực tiếp, không có file âm thanh."], href: "https://developer.mozilla.org/docs/Web/API/Web_Audio_API" },
+  { name: "CSS", kind: ["Motion", "Chuyển động"], what: ["Scroll-driven animation, the edge light on cards, the light and dark themes.", "Chuyển động theo cuộn trang, tia sáng chạy quanh viền thẻ, giao diện sáng và tối."], href: "https://developer.mozilla.org/docs/Web/CSS/CSS_scroll-driven_animations" },
 ];
 
 export const MARQUEE = ["Vue.js", "Nuxt.js", "Ant Design Vue", "Ruby", "Ruby on Rails", "RESTful API", "AWS", "Twilio", "Database Design", "System Thinking", "GitHub", "SVN"];

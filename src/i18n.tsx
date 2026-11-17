@@ -18,7 +18,7 @@ const en = {
   "l4.tag": "Cadet", "l4.now": "now", "l4.h2": "Signal Officer School",
   "l4.lede": "Second-degree student at the school that trains the people who keep the army's lines of communication alive. I used to make sure a request reached the server. Now I'm learning how an order reaches the right person at the right moment.",
   "l4.k": "Try it", "l4.c": "Send a test signal", "l4.send": "Transmit", "l4.msg": "Message",
-  "sk.tag": "Kit", "sk.h2": "Tools I reach for.", "sk.lede": "Cloud, deployment, automation and design. The things that sit under everything else.",
+  "sk.tag": "Built with", "sk.h2": "What this page is made of.", "sk.lede": "No template. Every effect, sound and 3D layer here is written in code with these. Hover one to find it in the stack.",
   "ct.tag": "Contact", "ct.mail": "Email", "ct.mail.s": "click to copy", "ct.copied": "Email copied",
   "ft.src": "Source", "ft.hint": "Press ⌘K / Ctrl K anywhere.",
   "p.theme": "Colour theme", "p.dark": "Dark", "p.light": "Light", "p.motion": "Motion", "p.sound": "Sound", "p.hud": "HUD", "p.on": "on", "p.off": "off",
@@ -27,6 +27,13 @@ const en = {
   "pal.go": "Go to", "pal.set": "Settings", "pal.links": "Links", "pal.fun": "Terminal", "pal.run": "Run", "pal.copy": "Copy email address", "pal.top": "Back to the top",
   "pal.pulse": "Send a pulse through the stack", "pal.foot": "↑↓ move · ⏎ run · esc close",
   "gauge": "depth",
+  "x.open": "Explore in 3D", "x.dbl": "double-click anywhere to explore in 3D", "x.title": "The stack", "x.close": "Close", "x.reset": "Reset view", "x.spread": "Pull apart", "x.merge": "Stack up",
+  "x.all": "All", "x.hint": "Drag to turn · scroll or pinch to zoom · click a layer to look closer",
+  "x.hint2": "Move the pointer to tilt it · drag to turn it · click outside to put it back",
+  "x.go": "Go to this layer", "x.prev": "Previous layer", "x.next": "Next layer", "x.morse": "Transmit BTT", "x.keys": "← → layers · S pull apart · R reset · Esc close",
+  "x.surface": "The surface: this page, the name, and the route below it.",
+  "pal.x": "Explore the stack in 3D",
+  "demo.cmd": "Showcase: play every effect, start to finish", "demo.title": "Showcase", "demo.stop": "Stop",
 };
 
 export type Key = keyof typeof en;
@@ -47,7 +54,7 @@ const vi: Record<Key, string> = {
   "l4.tag": "Học viên", "l4.now": "hiện tại", "l4.h2": "Trường Sĩ quan Thông tin",
   "l4.lede": "Học viên văn bằng 2 tại ngôi trường đào tạo những người giữ mạch máu thông tin liên lạc của quân đội. Trước đây mình lo cho một request tới được server. Giờ mình học cách để một mệnh lệnh tới đúng người, đúng lúc.",
   "l4.k": "Thử xem", "l4.c": "Gửi thử một tín hiệu", "l4.send": "Phát", "l4.msg": "Thông điệp",
-  "sk.tag": "Trang bị", "sk.h2": "Những công cụ mình dùng.", "sk.lede": "Cloud, triển khai, tự động hóa và thiết kế. Những thứ nằm bên dưới mọi thứ khác.",
+  "sk.tag": "Làm nên trang này", "sk.h2": "Trang này được làm từ gì.", "sk.lede": "Không dùng template. Mọi hiệu ứng, âm thanh và tấm kính 3D ở đây đều viết bằng code với những công cụ này. Rê chuột vào một thẻ để thấy nó trên chồng tầng.",
   "ct.tag": "Liên hệ", "ct.mail": "Email", "ct.mail.s": "bấm để chép", "ct.copied": "Đã chép email",
   "ft.src": "Mã nguồn", "ft.hint": "Nhấn ⌘K / Ctrl K ở bất kỳ đâu.",
   "p.theme": "Giao diện", "p.dark": "Tối", "p.light": "Sáng", "p.motion": "Chuyển động", "p.sound": "Âm thanh", "p.hud": "HUD", "p.on": "bật", "p.off": "tắt",
@@ -56,6 +63,13 @@ const vi: Record<Key, string> = {
   "pal.go": "Đi tới", "pal.set": "Cài đặt", "pal.links": "Liên kết", "pal.fun": "Terminal", "pal.run": "Chạy", "pal.copy": "Chép địa chỉ email", "pal.top": "Về đầu trang",
   "pal.pulse": "Phát một xung qua chồng tầng", "pal.foot": "↑↓ chọn · ⏎ chạy · esc đóng",
   "gauge": "độ sâu",
+  "x.open": "Khám phá 3D", "x.dbl": "bấm đúp vào chỗ trống để khám phá 3D", "x.title": "Chồng tầng", "x.close": "Đóng", "x.reset": "Đặt lại góc nhìn", "x.spread": "Tách tầng", "x.merge": "Gộp tầng",
+  "x.all": "Tất cả", "x.hint": "Kéo để xoay · cuộn hoặc chụm hai ngón để phóng to · bấm vào một tầng để xem kỹ",
+  "x.hint2": "Di chuột để nghiêng tấm kính · kéo để xoay · bấm ra ngoài để đặt lại",
+  "x.go": "Đi tới tầng này", "x.prev": "Tầng trước", "x.next": "Tầng sau", "x.morse": "Phát BTT", "x.keys": "← → đổi tầng · S tách tầng · R đặt lại · Esc đóng",
+  "x.surface": "Bề mặt: trang này, cái tên, và chặng đường nằm bên dưới.",
+  "pal.x": "Khám phá chồng tầng 3D",
+  "demo.cmd": "Trình diễn: chạy toàn bộ hiệu ứng từ đầu tới cuối", "demo.title": "Trình diễn", "demo.stop": "Dừng",
 };
 
 export const DICT: Record<Lang, Record<Key, string>> = { en, vi };

@@ -36,6 +36,18 @@ export const S = {
   vel: 0,
   /** counts arrivals on a layer; the scene answers each one with a shockwave */
   arrive: 0,
+  /** explore mode: the stack takes over the screen and can be handled directly */
+  explore: false,
+  /** in explore mode, the slab brought up for a close look, or -1 */
+  pick: -1,
+  /** in explore mode, 1 when the layers are pulled apart */
+  spread: 0,
+  /** bumped to put the explore camera back where it started */
+  xreset: 0,
+  /** bumped to play the opening of the 3D stack again */
+  replay: 0,
+  /** true while the showcase is driving the page */
+  demo: false,
 };
 
 export const LAYERS = [0, 1, 2, 3, 4] as const;

@@ -32,7 +32,7 @@ export function Hero({ onPalette }: { onPalette: () => void }) {
           <a className="btn btn--p mag" href="#l1">{t("hero.cta")} ↓</a>
           <button className="btn mag" onClick={onPalette}>{t("hero.term")} <kbd>⌘K</kbd></button>
         </R>
-        <R className="cue" i={8}><i /><span>{t("hero.cue")}</span></R>
+        <R className="cue" i={8}><i /><span>{t("hero.cue")}<b className="cue__x"> · {t("x.dbl")}</b></span></R>
       </div></div>
     </section>
   );
@@ -65,6 +65,7 @@ export function Work() {
     el.style.setProperty("--px", `${btn.offsetLeft - 3}px`); el.style.setProperty("--pw", `${btn.offsetWidth}px`);
   }, [k, lang]);
   const pick = (n: ExpKey) => { if (n !== k) { setK(n); S.pulse(); sfx.toggle(n === "be"); } };
+  useEffect(() => { const on = (e: Event) => { const n = (e as CustomEvent<ExpKey>).detail; setK(n); S.pulse(); sfx.toggle(n === "be"); }; addEventListener("btt:tab", on); return () => removeEventListener("btt:tab", on); }, []);
   return (
     <section className="sec" id="l2" data-d="2" data-f="0" data-layer="2">
       <div className="wrap"><span className="ghost" aria-hidden="true">02</span><div className="col">
@@ -172,7 +173,7 @@ export function Signal() {
 }
 
 export function Tools() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const point = (i: number) => { if (S.tool === i) return; S.tool = i; S.kick(); if (i >= 0) sfx.tool(i); };
   return (
     <>
@@ -184,10 +185,12 @@ export function Tools() {
           <R as="p" className="lede" i={2}>{t("sk.lede")}</R>
           {/* Each card is tied to its tile in the 3D kit on the right: hover one and its tile lifts. */}
           <R className="grid tools" i={3} onPointerLeave={() => point(-1)}>
-            {TOOLS.map(([name, kind, href], i) => (
-              <a key={name} className="card tool" href={href} target="_blank" rel="noopener" style={{ "--n": i } as CSSProperties}
+            {TOOLS.map((tool, i) => (
+              <a key={tool.name} className="card tool" href={tool.href} target="_blank" rel="noopener" style={{ "--n": i } as CSSProperties}
                 onPointerEnter={() => point(i)} onFocus={() => point(i)} onBlur={() => point(-1)}>
-                <div className="k"><span>{kind}</span><b>{String(i + 1).padStart(2, "0")}</b></div><h3>{name}</h3>
+                <div className="k"><span>{lang === "vi" ? tool.kind[1] : tool.kind[0]}</span><b>{String(i + 1).padStart(2, "0")}</b></div>
+                <h3>{tool.name}</h3>
+                <p>{lang === "vi" ? tool.what[1] : tool.what[0]}</p>
               </a>
             ))}
           </R>

@@ -5,6 +5,7 @@ import { Logo } from "./Logo";
 import { S } from "../store";
 import { createLayerScene } from "../scene/layers";
 import { initAurora } from "../lib/aurora";
+import { initNameMarquee } from "../lib/nameMarquee";
 import type { Where } from "../lib/useScrollState";
 
 const NAV: { href: string; key: "nav.1" | "nav.2" | "nav.3" | "nav.4" | "nav.s" | "nav.c" }[] = [
@@ -107,9 +108,13 @@ export function Footer() {
   const { t } = useLang();
   const p = usePrefs();
   const onoff = (v: boolean) => t(v ? "p.on" : "p.off");
+  const box = useRef<HTMLDivElement>(null), track = useRef<HTMLDivElement>(null);
+  useEffect(() => initNameMarquee(box.current!, track.current!), []);
   return (
     <footer className="foot">
-      <div className="bigmarq" aria-hidden="true"><div>{[0, 1].map((k) => <span key={k}>Bùi Tuấn Tú <i>✦</i> Creating with code <i>✦</i> Small details matter <i>✦</i> </span>)}</div></div>
+      <div className="bigmarq" ref={box} aria-hidden="true">
+        <div ref={track}>{[0, 1].map((k) => <span key={k}><b className="nm">Bùi Tuấn Tú</b> <i>✦</i> Creating with code <i>✦</i> Small details matter <i>✦</i> </span>)}</div>
+      </div>
       <div className="wrap">
       <span className="mono">© {new Date().getFullYear()} Bùi Tuấn Tú · buituantu.com · {t("ft.hint")}</span>
       <span className="foot__prefs">
@@ -187,7 +192,7 @@ export function Hud() {
 /** Marks which layer the rail is pointing at, for the scene and for React. */
 export function useFocus(over: boolean) {
   const [focus, set] = useState(-1);
-  const setFocus = (i: number) => { const v = over ? i : -1; S.focus = v; S.kick(); set(v); };
+  const setFocus = (i: number) => { const v = over || S.demo ? i : -1; S.focus = v; S.kick(); set(v); };
   useEffect(() => { if (!over) { S.focus = -1; set(-1); } }, [over]);
   return [focus, setFocus] as const;
 }

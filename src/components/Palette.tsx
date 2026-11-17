@@ -10,7 +10,7 @@ import { sfx } from "../lib/sound";
 
 interface Cmd { label: string; hint: string; group: "go" | "set" | "links" | "fun"; run: () => void; keep?: boolean }
 
-export function Palette({ open, onClose, notify }: { open: boolean; onClose: () => void; notify: (m: string) => void }) {
+export function Palette({ open, onClose, notify, onExplore, onShowcase }: { open: boolean; onClose: () => void; notify: (m: string) => void; onExplore: () => void; onShowcase: () => void }) {
   const { lang, t, toggle } = useLang();
   const p = usePrefs();
   const [q, setQ] = useState(""), [sel, setSel] = useState(0), [log, setLog] = useState<string[]>([]);
@@ -27,7 +27,7 @@ export function Palette({ open, onClose, notify }: { open: boolean; onClose: () 
     const places: Record<string, string> = { "/": "top", "~": "top", l0: "top", l1: "l1", l2: "l2", l3: "l3", l4: "l4", tools: "stack", kit: "stack", contact: "contact" };
     switch (c) {
       case "help": return [L("commands:", "các lệnh:"), "  whoami · ls · cat <file> · cd <l0…l4|tools|contact> · pwd · date · echo <text>",
-        "  theme · motion · sound · hud · lang · pulse · morse <text> · email", "  matrix · party · sudo hire me · clear · exit"];
+        "  demo · explore · theme · motion · sound · hud · lang · pulse · morse <text> · email", "  matrix · party · sudo hire me · clear · exit"];
       case "whoami": return ["Bùi Tuấn Tú", L("software engineer · second-degree student, Signal Officer School", "kỹ sư phần mềm · học viên văn bằng 2, Trường Sĩ quan Thông tin")];
       case "ls": return ["about.txt  route.txt  stack.txt  contact.txt"];
       case "pwd": return [`/layers/${S.f > 0.5 ? "overview" : `L${Math.round(S.d)}`}`];
@@ -36,7 +36,7 @@ export function Palette({ open, onClose, notify }: { open: boolean; onClose: () 
       case "cat": switch (arg.replace(/\.txt$/, "")) {
         case "about": return ["Creating with code. Small details matter."];
         case "route": return [`L1  ${t("l1.h2").padEnd(26)}2021 – 2025`, "L2  2NF Software · Frontend     12.2023 – 05.2024", "L2  2NF Software · Backend      06.2024 – 06.2025", `L3  ${L("Military service", "Nghĩa vụ quân sự")}`, `L4  ${L("Signal Officer School", "Trường Sĩ quan Thông tin")}  ← ${L("now", "hiện tại")}`];
-        case "stack": return [TOOLS.map((x) => x[0]).join("  ")];
+        case "stack": return TOOLS.map((x) => `${x.name.padEnd(12)}${lang === "vi" ? x.what[1] : x.what[0]}`);
         case "contact": return LINKS.map((l) => `${l.name.padEnd(10)}${l.href}`);
         default: return [`cat: ${arg || "?"}: ${L("no such file. Try: ls", "không có file này. Thử: ls")}`];
       }
@@ -49,6 +49,8 @@ export function Palette({ open, onClose, notify }: { open: boolean; onClose: () 
       case "pulse": S.pulse(); sfx.pulse(); return ["~~~ ▮ ~~~"];
       case "email": return [copyMail(), t("ct.copied")];
       case "morse": go("l4")(); setTimeout(() => dispatchEvent(new CustomEvent("btt:morse", { detail: arg || undefined })), 700); return null;
+      case "explore": if (document.documentElement.dataset.gl !== "on") return [L("3D is not available on this device", "Thiết bị này không chạy được 3D")]; onExplore(); return null;
+      case "demo": case "showcase": setTimeout(onShowcase, 250); return null;
       case "matrix": matrix(); return null;
       case "party": party(); return null;
       case "sudo": if (arg.toLowerCase() === "hire me") { confetti(innerWidth / 2, innerHeight * 0.4, 60); return [L("Permission granted. Opening a channel…", "Đã cấp quyền. Đang mở kênh liên lạc…"), `→ ${copyMail()}`]; }
@@ -82,6 +84,8 @@ export function Palette({ open, onClose, notify }: { open: boolean; onClose: () 
     { label: t("pal.copy"), hint: "email", group: "links", run: () => { copyMail(); } },
     ...LINKS.map((l): Cmd => ({ label: l.name, hint: l.handle, group: "links", run: ext(l.href) })),
     { label: L("Source code", "Mã nguồn"), hint: "github", group: "links", run: ext("https://github.com/utnautiub/buituantu.com") },
+    { label: t("demo.cmd"), hint: "demo", group: "fun", run: () => runTerm("demo") },
+    { label: t("pal.x"), hint: "explore", group: "fun", run: () => runTerm("explore") },
     { label: t("pal.morse"), hint: "morse", group: "fun", run: () => runTerm("morse") },
     { label: t("pal.pulse"), hint: "pulse", group: "fun", run: () => runTerm("pulse"), keep: true },
     { label: "help", hint: "⏎", group: "fun", run: () => runTerm("help"), keep: true },

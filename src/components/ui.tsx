@@ -40,12 +40,13 @@ export function KineticHeading({ as = "h1", parts, idle, wave, className = "", i
     const go = (ms: number) => { timer = window.setTimeout(() => { k.measure(); k.wave(160); }, ms); };
     let stop = () => {};
     if (wave === "reveal") stop = reveal(el, () => go(450));
-    else if (S.ready) go(350); // remounted by a language switch
+    else if (S.ready) { go(350); const onReplay = () => k.scatter(); addEventListener("btt:replay", onReplay); stop = () => removeEventListener("btt:replay", onReplay); } // remounted by a language switch
     else {
       // first load: the letters fly in from all over as the opening sequence lifts
       const onReady = () => k.scatter();
       addEventListener("btt:ready", onReady, { once: true });
-      stop = () => removeEventListener("btt:ready", onReady);
+      addEventListener("btt:replay", onReady);
+      stop = () => { removeEventListener("btt:ready", onReady); removeEventListener("btt:replay", onReady); };
     }
     return () => { clearTimeout(timer); stop(); k.destroy(); };
   }, [parts, idle, wave]);

@@ -77,7 +77,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     top.position.y = 0.101; halo.position.y = -0.05;
     const ro = (N - i) * 10; halo.renderOrder = ro; body.renderOrder = ro + 1; top.renderOrder = ro + 2; edge.renderOrder = ro + 3;
     group.add(halo, body, top, edge); stack.add(group);
-    return { group, halo, bodyMat, topMat, haloMat, edgeMat, cv, tex, baseY, hex, foc: 0 };
+    return { group, body, top, halo, bodyMat, topMat, haloMat, edgeMat, cv, tex, baseY, hex, foc: 0, hov: 0, pk: 0 };
   });
   /* Small labelled tiles laid out above a slab and tied to the cards on the left: the kit sits on the
      bottom slab while the tools section is on screen, the contacts sit on the top slab in the overview. */
@@ -92,7 +92,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     mesh.renderOrder = order + i; mesh.visible = false; stack.add(mesh);
     return { mesh, mat, cv, tex, name, hov: 0 };
   });
-  const tiles = makeTiles(TOOLS.map((t) => t[0]), 4, 0.98, 60);
+  const tiles = makeTiles(TOOLS.map((t) => t.name), 4, 0.98, 60);
   const cards = makeTiles(["Email", ...LINKS.map((l) => l.name)], 3, 1.2, 80);
   const sets = [
     { list: tiles, dim: 0, slab: N - 1, amount: () => kit, hovered: () => S.tool },
@@ -159,21 +159,35 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   packets.frustumCulled = false; packets.renderOrder = 100; stack.add(packets);
 
   /* ----- layout ----- */
-  let vw = 1, vh = 1, aspect = 1;
+  let vw = 1, vh = 1, aspect = 1, nOffX = 0, nOffY = 0, curOffX = NaN, curOffY = NaN;
   const resize = () => {
     vw = innerWidth; vh = innerHeight; aspect = vw / vh;
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, TIERS[tier].dpr)); renderer.setSize(vw, vh, false);
     camera.aspect = aspect;
     // Keep the stack on the clear side of the viewport: right on wide screens, low on tall ones.
-    if (aspect >= 1.05) camera.setViewOffset(vw, vh, -vw * 0.22, 0, vw, vh); else camera.setViewOffset(vw, vh, 0, -vh * 0.28, vw, vh);
-    camera.updateProjectionMatrix(); kick();
+    if (aspect >= 1.05) { nOffX = -vw * 0.22; nOffY = 0; } else { nOffX = 0; nOffY = -vh * 0.28; }
+    curOffX = NaN; kick();
   };
 
   /* ----- state ----- */
-  let intro = S.rm ? 1 : 0, vel = 0, fovKick = 0, arrived = S.arrive, fov = 32;
+  let replay = S.replay, intro = S.rm ? 1 : 0, vel = 0, fovKick = 0, arrived = S.arrive, fov = 32;
   let dive = S.d, fin = S.f, kit = S.k, mx = 0, my = 0, tmx = 0, tmy = 0, lamp = 0, pulse = 0, boost = 0, clock = 0, dim = 0;
   let lastInput = performance.now(), running = false, paused = false, dead = false, raf = 0, last = 0;
   const camOff = new THREE.Vector3(6.2, 5.0, 8.2), look = new THREE.Vector3();
+
+  /* ----- explore mode -----
+     The camera orbits the stack (drag), zooms (wheel or pinch), the layers can be pulled apart, and a
+     clicked slab flies up in front of the camera, face on, where it tilts with the pointer like a card. */
+  const YAW0 = Math.atan2(camOff.x, camOff.z), PITCH0 = Math.atan2(camOff.y, Math.hypot(camOff.x, camOff.z)), DIST0 = camOff.length();
+  let ex = 0, yaw = YAW0, pitch = PITCH0, dist = DIST0, yawT = YAW0, pitchT = PITCH0, distT = DIST0, yawV = 0, pitchV = 0;
+  let spreadV = 0, hover = -1, zoomPick = 1, cardRx = 0, cardRy = 0, cardVx = 0, cardVy = 0, xreset = S.xreset, lastX = performance.now();
+  let dragging = false, dragMoved = 0, px0 = 0, py0 = 0;
+  const pointers = new Map<number, { x: number; y: number }>(); let pinch0 = 0;
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion(), faceQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+  const tiltE = new THREE.Euler(), xPos = new THREE.Vector3(), xLook = new THREE.Vector3();
+  const emit = (detail: { hover?: number; pick?: number }) => dispatchEvent(new CustomEvent("btt:x", { detail }));
+  const ease = (t: number) => t * t * (3 - 2 * t);
 
   const update = (dt: number) => {
     const k = S.rm ? 1 : 1 - Math.exp(-dt * 5.5);
@@ -186,6 +200,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     if (!S.rm) clock += dt * (1 + boost * 5);
 
     // Opening: the slabs drop in one after another once the page is ready.
+    if (S.replay !== replay) { replay = S.replay; if (!S.rm) intro = 0; }
     if (S.rm) intro = 1; else if (S.ready && intro < 1) intro = Math.min(1, intro + dt / 1.7);
     // Scroll speed stretches the stack like an accordion and leans it; it relaxes when the page stops.
     vel += (Math.max(-1, Math.min(1, S.vel / 55)) - vel) * (1 - Math.exp(-dt * 8));
@@ -194,28 +209,101 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     if (S.arrive !== arrived) { arrived = S.arrive; if (!S.rm) { rings.forEach((r, j) => { r.t = -j * 0.2; }); fovKick = 1; boost = Math.max(boost, 0.7); } }
 
     const cur = Math.min(N - 1, Math.max(0, dive)), over = smooth(0, 1, fin), ci = Math.round(cur);
+
+    // explore blend, orbit and its inertia
+    ex += ((S.explore ? 1 : 0) - ex) * (S.rm ? 1 : 1 - Math.exp(-dt * 4.5));
+    if (Math.abs((S.explore ? 1 : 0) - ex) < 0.001) ex = S.explore ? 1 : 0;
+    const xe = ease(ex), picked = S.explore ? S.pick : -1;
+    if (S.xreset !== xreset) { xreset = S.xreset; yawT = YAW0; pitchT = PITCH0; distT = DIST0; zoomPick = 1; yawV = pitchV = 0; }
+    if (S.explore && !dragging) {
+      yawT += yawV * dt; pitchT += pitchV * dt; yawV *= Math.exp(-dt * 3); pitchV *= Math.exp(-dt * 3);
+      if (picked < 0 && performance.now() - lastX > 2600 && !S.rm) yawT += dt * 0.12; // idle: turn slowly
+    }
+    pitchT = Math.min(1.45, Math.max(-0.25, pitchT)); distT = Math.min(24, Math.max(5, distT));
+    const ko = S.rm ? 1 : 1 - Math.exp(-dt * 8);
+    yaw += (yawT - yaw) * ko; pitch += (pitchT - pitch) * ko; dist += (distT - dist) * ko;
+    spreadV += ((S.explore ? S.spread : 0) - spreadV) * (S.rm ? 1 : 1 - Math.exp(-dt * 5));
+    cardVx += (-cardRx * 40 - cardVx * 9) * dt; cardVy += (-cardRy * 40 - cardVy * 9) * dt;
+    if (!dragging) { cardRx += cardVx * dt; cardRy += cardVy * dt; }
+
+    // camera: the scroll-driven view and the orbit, blended
+    {
+      // Aim below the current slab, by how much of the stack is still under it, so the slabs that remain
+      // sit in the middle of the screen instead of running off the bottom; pull back a little more near the top.
+      const below = (N - 1 - cur) / (N - 1);
+      const y = ((2 - cur) * GAP - below * GAP * 1.15) * (1 - over) + over * 0.25;
+      const far = (aspect < 1 ? Math.min(2.1, 1.08 / aspect) : 1) * (1 + over * 0.46) * (1 + below * 0.16 * (1 - over));
+      look.set(0, y, 0); camera.position.copy(camOff).multiplyScalar(far).add(look);
+      const cp = Math.cos(pitch), fit = aspect < 1 ? Math.min(1.9, 1.05 / aspect) : 1;
+      xLook.set(0, 0, 0); xPos.set(Math.sin(yaw) * cp, Math.sin(pitch), Math.cos(yaw) * cp).multiplyScalar(dist * fit * (1 + spreadV * 0.25));
+      if (xe > 0) { look.lerp(xLook, xe); camera.position.lerp(xPos, xe); }
+      camera.lookAt(look);
+      stack.rotation.y = (-0.62 + mx * 0.3 + over * Math.sin(clock * 0.25) * 0.25) * (1 - xe) - 0.62 * xe;
+      stack.rotation.x = my * 0.09 * (1 - xe);
+      stack.rotation.z = vel * 0.045 * (1 - xe);
+      const wide = aspect >= 1.05, wantX = picked >= 0 ? (wide ? -vw * 0.2 : 0) : 0, wantY = picked >= 0 && !wide ? vh * 0.2 : 0;
+      const offX = nOffX + (wantX - nOffX) * xe, offY = nOffY + (wantY - nOffY) * xe;
+      const wantFov = 32 + (fovKick * 2.6 + Math.abs(vel) * 1.6) * (1 - xe);
+      if (Math.abs(offX - curOffX) > 0.5 || Math.abs(offY - curOffY) > 0.5 || Math.abs(wantFov - fov) > 0.01 || Number.isNaN(curOffX)) {
+        curOffX = offX; curOffY = offY; fov = wantFov; camera.fov = fov;
+        camera.setViewOffset(vw, vh, offX, offY, vw, vh); camera.updateProjectionMatrix();
+      }
+      camera.updateMatrixWorld(); stack.updateMatrixWorld();
+    }
     // In the overview, hovering a layer in the rail picks its slab out of the stack.
     const kf = 1 - Math.exp(-dt * 9), focus = over > 0.5 ? S.focus : -1;
     dim += ((focus >= 0 ? 1 : 0) - dim) * kf;
 
+    // where a presented slab goes: in front of the camera, face on, sized to fit the free part of the screen
+    const tanH = Math.tan((fov * Math.PI) / 360), wideScr = aspect >= 1.05;
+    const fitD = Math.max(W / ((wideScr ? 0.5 : 0.86) * 2 * tanH * aspect), D / ((wideScr ? 0.62 : 0.4) * 2 * tanH)) * zoomPick;
+    const stackQInv = stack.getWorldQuaternion(tmpQ2).invert();
+
     slabs.forEach((s, i) => {
       s.foc += ((i === focus ? 1 : 0) - s.foc) * kf;
+      s.hov += ((S.explore && i === hover && picked < 0 ? 1 : 0) - s.hov) * kf;
+      s.pk += ((i === picked ? 1 : 0) - s.pk) * (S.rm ? 1 : 1 - Math.exp(-dt * 5));
       const land = backOut(clamp01(intro * 1.7 - i * 0.14)), shown = clamp01(land * 1.4);
       const peel = smooth(0.25, 0.95, dive - i) * (1 - over);
       let near = Math.max(1 - Math.min(1, Math.abs(cur - i)), over * 0.8);
       near = near * (1 - dim * 0.85) + s.foc * 0.9;
       const spread = (1 - smooth(0, 0.6, dive)) * (i - 2) * -0.08 + over * (i - 2) * -0.1;
+      // x and z are only ever moved by the close-up below, so put them back every frame
+      s.group.position.x = 0; s.group.position.z = 0;
       s.group.position.y = s.baseY + peel * 3.4 + spread + s.foc * 0.22 + Math.sin(clock * 0.8 + i) * 0.02
         + (1 - land) * (5 - i * 0.5) + (cur - i) * Math.abs(vel) * 0.24;
       s.group.rotation.x = peel * -0.35; s.group.rotation.z = peel * 0.12 + (1 - land) * (0.55 - i * 0.22);
       s.group.rotation.y = (1 - land) * (i % 2 ? -0.5 : 0.5);
-      const fade = (1 - peel) * shown, f = 0.55 + Math.min(1, near) * 0.45 - dim * (1 - s.foc) * 0.35;
+      // explore: every layer back in place, pulled apart on request, the hovered one lifted
+      const others = picked >= 0 && i !== picked ? 1 : 0;
+      if (xe > 0) {
+        const xy = s.baseY * (1 + spreadV * 1.35) + s.hov * 0.28 + Math.sin(clock * 0.8 + i) * 0.02;
+        s.group.position.y += (xy - s.group.position.y) * xe;
+        s.group.rotation.x *= 1 - xe; s.group.rotation.z *= 1 - xe;
+      }
+      if (s.pk > 0.001) {
+        const e = ease(s.pk);
+        camera.getWorldDirection(tmpV); tmpV.multiplyScalar(fitD).add(camera.position);
+        stack.worldToLocal(tmpV);
+        // After facing the camera the slab's own axes are: x across, y towards the viewer, z down the picture.
+        // Tilting is a turn about x (pointer up/down) and about z (pointer left/right), so the face leans
+        // towards the pointer like a held card.
+        tiltE.set(cardRx + my * 0.28, 0, -(cardRy + mx * 0.4));
+        tmpQ.copy(stackQInv).multiply(camera.quaternion).multiply(faceQ).multiply(new THREE.Quaternion().setFromEuler(tiltE));
+        s.group.position.lerp(tmpV, e);
+        s.group.quaternion.slerp(tmpQ, e);
+      }
+      const xNear = 1 - others * 0.7;
+      near = near * (1 - xe) + xNear * xe;
+      const fade = ((1 - peel) * shown) * (1 - xe) + shown * xe * (1 - others * 0.55), f = 0.55 + Math.min(1, near) * 0.45 - dim * (1 - s.foc) * 0.35 * (1 - xe);
       const hit = i === ci ? pulse : 0, lit = i === N - 1 ? lamp : 0;
       s.topMat.opacity = fade * f * (i === N - 1 ? 1 - kit * 0.6 : i === 0 ? 1 - smooth(0.55, 1, fin) * 0.6 : 1);
       s.bodyMat.opacity = fade * (light ? 0.6 : 0.28) * f;
       s.edgeMat.opacity = fade * (0.45 + Math.min(1, near) * 0.55) * (1 - dim * (1 - s.foc) * 0.6);
       s.haloMat.opacity = Math.min(1, fade * (0.12 + near * 0.35 + hit * 0.5 + lit * 0.55 + s.foc * 0.35)) * (light ? 0.4 : 1);
-      s.halo.scale.setScalar(1 + hit * 0.22 + lit * 0.1 + s.foc * 0.12);
+      s.halo.scale.setScalar(1 + hit * 0.22 + lit * 0.1 + s.foc * 0.12 + s.hov * 0.15);
+      if (s.hov > 0.01) { s.haloMat.opacity = Math.min(1, s.haloMat.opacity + s.hov * 0.4); s.edgeMat.opacity = Math.min(1, s.edgeMat.opacity + s.hov * 0.5); }
+      if (s.pk > 0.01) { s.topMat.opacity = Math.max(s.topMat.opacity, s.pk); s.edgeMat.opacity = Math.max(s.edgeMat.opacity, s.pk); }
       s.group.visible = fade > 0.01;
     });
     postMat.opacity = 0.35 * Math.max(1 - smooth(3, 4, dive), over) * clamp01(intro * 2 - 1);
@@ -232,7 +320,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
 
     // Hovering a card on the left lifts its tile on the right.
     for (const set of sets) {
-      const amt = set.amount(), hovered = amt > 0.5 ? set.hovered() : -1, baseY = slabs[set.slab].group.position.y;
+      const amt = set.amount() * (1 - xe), hovered = amt > 0.5 ? set.hovered() : -1, baseY = slabs[set.slab].group.position.y;
       set.dim += ((hovered >= 0 ? 1 : 0) - set.dim) * kf;
       set.list.forEach((t, i) => {
         t.hov += ((i === hovered ? 1 : 0) - t.hov) * kf;
@@ -254,9 +342,6 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     }
     posAttr.needsUpdate = true; colAttr.needsUpdate = true;
 
-    const y = (2 - cur) * GAP * (1 - over) + over * 0.25, far = (aspect < 1 ? Math.min(2.1, 1.08 / aspect) : 1) * (1 + over * 0.46);
-    look.set(0, y, 0); camera.position.copy(camOff).multiplyScalar(far).add(look); camera.lookAt(look);
-    stack.rotation.y = -0.62 + mx * 0.3 + over * Math.sin(clock * 0.25) * 0.25;
     // sparks: two tilted rings turning in opposite directions around the slab in focus
     const lit = clamp01(intro * 2 - 1), sy = slabs[Math.min(N - 1, ci)].group.position.y * (1 - over) + 0.1;
     for (let k = 0; k < SPARKS; k++) {
@@ -267,13 +352,9 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       sparkPos[o] = Math.cos(b) * r2; sparkPos[o + 1] = sy - Math.sin(b + 1) * 0.7 * (1 + over * 2.2); sparkPos[o + 2] = Math.sin(b) * r2 * 0.72;
     }
     sparkAttr.needsUpdate = true;
-    sparkMat.color.copy(COL[Math.min(N - 1, ci)]); sparkMat.opacity = lit * (light ? 0.55 : 0.9) * (0.55 + pulse * 0.45 + fovKick * 0.3);
+    sparkMat.color.copy(COL[Math.min(N - 1, ci)]); sparkMat.opacity = lit * (light ? 0.55 : 0.9) * (0.55 + pulse * 0.45 + fovKick * 0.3) * (1 - xe * 0.6);
     starMat.opacity = lit * (light ? 0.35 : 0.6);
 
-    stack.rotation.x = my * 0.09;
-    stack.rotation.z = vel * 0.045;
-    const wantFov = 32 + fovKick * 2.6 + Math.abs(vel) * 1.6;
-    if (Math.abs(wantFov - fov) > 0.01) { fov = wantFov; camera.fov = fov; camera.updateProjectionMatrix(); }
   };
 
   /* ----- adaptive quality ----- */
@@ -286,7 +367,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   };
   // Run continuously only while something is actually moving: the hero, the overview, a transition,
   // a recent pointer move, a pulse or the Morse lamp.
-  const busy = (now: number) => S.d < 1.1 || S.f > 0.5 || Math.abs(S.d - dive) > 0.001 || Math.abs(S.f - fin) > 0.001 || Math.abs(S.k - kit) > 0.001 || (S.ready && intro < 1) || Math.abs(vel) > 0.004 || fovKick > 0.01 || rings.some((r) => r.t < 1) || now - lastInput < 1200 || pulse > 0.01 || boost > 0.02 || Math.abs(S.lamp - lamp) > 0.01;
+  const busy = (now: number) => S.explore || ex > 0.001 || S.d < 1.1 || S.f > 0.5 || Math.abs(S.d - dive) > 0.001 || Math.abs(S.f - fin) > 0.001 || Math.abs(S.k - kit) > 0.001 || (S.ready && intro < 1) || Math.abs(vel) > 0.004 || fovKick > 0.01 || rings.some((r) => r.t < 1) || now - lastInput < 1200 || pulse > 0.01 || boost > 0.02 || Math.abs(S.lamp - lamp) > 0.01;
   const frame = (now: number) => {
     if (!running) return;
     const ms = Math.min(100, Math.max(0, now - last) || 16.7); last = now;
@@ -298,6 +379,67 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
 
   const onMove = (e: PointerEvent) => { tmx = e.clientX / innerWidth - 0.5; tmy = e.clientY / innerHeight - 0.5; lastInput = performance.now(); kick(); };
   const onVis = () => { if (!document.hidden) kick(); };
+
+  /* explore input, on the stage element (its overlays would otherwise take the events from the canvas) */
+  const host = canvas.parentElement!;
+  const pickAt = (x: number, y: number) => {
+    const r = host.getBoundingClientRect();
+    ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hits = ray.intersectObjects(slabs.filter((s) => s.group.visible).map((s) => s.body), false);
+    return hits.length ? slabs.findIndex((s) => s.body === hits[0].object) : -1;
+  };
+  const setHover = (i: number) => { if (i !== hover) { hover = i; host.style.cursor = i >= 0 ? "pointer" : "grab"; emit({ hover: i }); } };
+  const onDown = (e: PointerEvent) => {
+    if (!S.explore) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); }
+    host.setPointerCapture(e.pointerId);
+    dragging = true; dragMoved = 0; px0 = e.clientX; py0 = e.clientY; yawV = pitchV = 0; lastX = performance.now();
+    host.style.cursor = "grabbing"; kick();
+  };
+  const onXMove = (e: PointerEvent) => {
+    if (!S.explore) return;
+    lastX = performance.now();
+    const p = pointers.get(e.pointerId);
+    if (dragging && p) {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+      dragMoved += Math.abs(dx) + Math.abs(dy);
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch0 > 0) { const k = pinch0 / d; if (S.pick >= 0) zoomPick = Math.min(1.8, Math.max(0.55, zoomPick * k)); else distT *= k; }
+        pinch0 = d; return;
+      }
+      if (S.pick >= 0) { cardRy = Math.max(-1.1, Math.min(1.1, cardRy + dx * 0.008)); cardRx = Math.max(-1.1, Math.min(1.1, cardRx + dy * 0.008)); cardVx = cardVy = 0; }
+      else { yawT -= dx * 0.0065; pitchT += dy * 0.0055; yawV = -dx * 0.35; pitchV = dy * 0.3; }
+    } else if (e.pointerType !== "touch") setHover(pickAt(e.clientX, e.clientY));
+    kick();
+  };
+  const onUp = (e: PointerEvent) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId); pinch0 = 0;
+    if (pointers.size) return;
+    dragging = false; host.style.cursor = "grab";
+    if (S.explore && dragMoved < 6 && Math.hypot(e.clientX - px0, e.clientY - py0) < 6) {
+      const i = pickAt(e.clientX, e.clientY);
+      // clicking a slab brings it up; clicking the presented one or empty space puts it back
+      const next = i >= 0 && i !== S.pick ? i : -1;
+      if (next !== S.pick) { S.pick = next; zoomPick = 1; cardRx = cardRy = 0; emit({ pick: next }); }
+    }
+    kick();
+  };
+  const onWheel = (e: WheelEvent) => {
+    if (!S.explore) return;
+    e.preventDefault(); lastX = performance.now();
+    const k = Math.exp(Math.max(-60, Math.min(60, e.deltaY)) * 0.0022);
+    if (S.pick >= 0) zoomPick = Math.min(1.8, Math.max(0.55, zoomPick * k)); else distT *= k;
+    kick();
+  };
+  host.addEventListener("pointerdown", onDown);
+  host.addEventListener("pointermove", onXMove);
+  host.addEventListener("pointerup", onUp);
+  host.addEventListener("pointercancel", onUp);
+  host.addEventListener("wheel", onWheel, { passive: false });
   const onLost = (e: Event) => { e.preventDefault(); giveUp(); };
   addEventListener("pointermove", onMove, { passive: true });
   addEventListener("resize", resize, { passive: true });
@@ -316,6 +458,8 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       dead = true; pause();
       removeEventListener("pointermove", onMove); removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis); canvas.removeEventListener("webglcontextlost", onLost);
+      host.removeEventListener("pointerdown", onDown); host.removeEventListener("pointermove", onXMove);
+      host.removeEventListener("pointerup", onUp); host.removeEventListener("pointercancel", onUp); host.removeEventListener("wheel", onWheel);
       S.kick = () => {}; S.pulse = () => {}; S.retheme = () => {};
       renderer.dispose();
     },

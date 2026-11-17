@@ -25,6 +25,7 @@ src/
     Sections.tsx      Hero, University, Work, Service, Signal (Morse), Tools, Contact
     Chrome.tsx        Nav, layer rail, depth gauge, opening sequence, 3D stage + CSS fallback, footer, HUD
     Palette.tsx       ⌘K / Ctrl K: searchable commands plus a small terminal (type `help`)
+    Explore.tsx       explore mode (double-click empty space, or E): controls and layer facts; the 3D handling is in scene/layers.ts
     ui.tsx            reveal wrappers and the spring-letter headline
   lib/
     kinetic.ts        spring physics for headline letters
@@ -34,6 +35,8 @@ src/
     sound.ts          UI sounds, synthesised with Web Audio (no audio files)
     aurora.ts         the flowing background, one small WebGL shader at low resolution
     fx.ts             click ripple, confetti, the line that sweeps across on a layer change
+    nameMarquee.ts    footer marquee that glides to a stop with the name centred
+    showcase.ts       the `demo` command: one scripted run through every effect
   scene/
     layers.ts         the five-slab stack (loaded on demand, renders only while something moves)
     textures.ts       the art painted on each slab
