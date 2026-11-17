@@ -50,6 +50,12 @@ export const LINKS: { name: string; handle: string; href: string; icon: string }
 /** Stored the same way as on buituantu.com: base64, decoded only when the visitor asks for it. */
 export const MAIL_B64 = "dXRuYXV0aXViQGdtYWlsLmNvbQ==";
 
+/** Rotating roles in the hero, from the "flip sentences" on the existing buituantu.com. */
+export const ROLES: Record<"en" | "vi", string[]> = {
+  en: ["Software Engineer", "Design Engineer", "Open Source Contributor"],
+  vi: ["Kỹ sư phần mềm", "Design Engineer", "Open Source Contributor"],
+};
+
 /** Headline words. 1 marks the gradient words, "\n" forces a line break. */
 export type Part = [word: string, grad: 0 | 1];
 export const HEADLINE: Record<"en" | "vi", Part[]> = {

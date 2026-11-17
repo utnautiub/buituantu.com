@@ -23,7 +23,8 @@ src/
   styles.css          all styling
   components/
     Sections.tsx      Hero, University, Work, Service, Signal (Morse), Tools, Contact
-    Chrome.tsx        Nav, layer rail, 3D stage + CSS fallback, footer, command palette
+    Chrome.tsx        Nav, layer rail, depth gauge, opening sequence, 3D stage + CSS fallback, footer, HUD
+    Palette.tsx       ⌘K / Ctrl K: searchable commands plus a small terminal (type `help`)
     ui.tsx            reveal wrappers and the spring-letter headline
   lib/
     kinetic.ts        spring physics for headline letters
@@ -49,3 +50,14 @@ handy for opening the page without installing anything.
 
 To use these components inside the existing Next.js site, copy `src/` in, add `"use client"` to
 `App.tsx`, and render `<App />` from a page.
+
+## SEO and icons
+
+- `index.html` carries the title, description, canonical URL, Open Graph and Twitter cards, and
+  schema.org data (Person, WebSite, ProfilePage). It also holds a static copy of the page content, so
+  crawlers that do not run JavaScript still read it; React replaces it on load.
+- `public/`: `favicon.svg` (the logo), `favicon.ico`, `apple-touch-icon.png`, `icon-192/512.png`,
+  `icon-maskable-512.png`, `og.png` (1200×630 share image), `site.webmanifest`, `robots.txt`, `sitemap.xml`.
+- All URLs assume the site is served at https://buituantu.com/. Change them in `index.html`,
+  `public/robots.txt` and `public/sitemap.xml` if it lives elsewhere.
+- The logo is also `src/components/Logo.tsx`, coloured from the theme so it follows light and dark mode.

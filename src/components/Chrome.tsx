@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { RAIL, useLang } from "../i18n";
 import { usePrefs } from "../prefs";
+import { Logo } from "./Logo";
 import { S } from "../store";
 import { createLayerScene } from "../scene/layers";
 import { initAurora } from "../lib/aurora";
@@ -23,7 +24,7 @@ export function Nav({ where, bar, onPalette }: { where: Where; bar: RefObject<HT
   return (
     <header className="nav">
       <div className="wrap nav__in">
-        <a className="brand" href="#top" aria-label="Bùi Tuấn Tú"><span className="brand__mark">BT</span><span>Bùi Tuấn Tú</span></a>
+        <a className="brand" href="#top" aria-label="Bùi Tuấn Tú"><span className="brand__mark" key={where.layer}><Logo /></span><span>Bùi Tuấn Tú</span></a>
         <nav className="nav__links" aria-label="Primary" ref={links}>
           {NAV.map((n) => <a key={n.href} href={`#${n.href}`} aria-current={where.id === n.href ? "true" : undefined}>{t(n.key)}</a>)}
           <span className="nav__ind" />
@@ -107,7 +108,9 @@ export function Footer() {
   const p = usePrefs();
   const onoff = (v: boolean) => t(v ? "p.on" : "p.off");
   return (
-    <footer className="foot"><div className="wrap">
+    <footer className="foot">
+      <div className="bigmarq" aria-hidden="true"><div>{[0, 1].map((k) => <span key={k}>Bùi Tuấn Tú <i>✦</i> Creating with code <i>✦</i> Small details matter <i>✦</i> </span>)}</div></div>
+      <div className="wrap">
       <span className="mono">© {new Date().getFullYear()} Bùi Tuấn Tú · buituantu.com · {t("ft.hint")}</span>
       <span className="foot__prefs">
         <button className="tbtn" onClick={() => p.flip("theme")}>{t("p.theme")}: {t(p.theme === "dark" ? "p.dark" : "p.light")}</button>
@@ -116,6 +119,18 @@ export function Footer() {
         <button className="tbtn" aria-pressed={p.hud} onClick={() => p.flip("hud")}>{t("p.hud")} {onoff(p.hud)}</button>
       </span>
     </div></footer>
+  );
+}
+
+/** A depth gauge on the right edge: a marker that sinks as you scroll, with the depth in metres.
+ *  The marker and the number are written directly by the scroll handler (see useScrollState). */
+export function Gauge({ mark, read }: { mark: RefObject<HTMLDivElement | null>; read: RefObject<HTMLElement | null> }) {
+  const { t } = useLang();
+  return (
+    <div className="gauge" aria-hidden="true">
+      <span>{t("gauge")}</span>
+      <div className="gauge__rail">{Array.from({ length: 21 }, (_, i) => <i key={i} className={i % 5 === 0 ? "maj" : ""} />)}<div className="gauge__mark" ref={mark}><b ref={read}>−00 m</b></div></div>
+    </div>
   );
 }
 
@@ -165,51 +180,6 @@ export function Hud() {
     <div className="hud" role="status" aria-live="off">
       <i /><span>{t("hud.fps")} <b ref={out}>–</b> fps</span>
       <button onClick={() => p.flip("hud")} aria-label={t("hud.close")}>×</button>
-    </div>
-  );
-}
-
-export function Palette({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { lang, t, toggle } = useLang();
-  const [q, setQ] = useState(""), [sel, setSel] = useState(0);
-  const input = useRef<HTMLInputElement>(null);
-  const cmds = useMemo(() => {
-    const go = (id: string) => () => { location.hash = id; };
-    const ext = (u: string) => () => { window.open(u, "_blank", "noopener"); };
-    const L = (e: string, v: string) => (lang === "vi" ? v : e);
-    return [
-      [`L0 · ${t("d.0")}`, "cd /", go("top")],
-      [`L1 · ${t("l1.h2")}`, "cd l1", go("l1")], ["L2 · 2NF Software", "cd l2", go("l2")],
-      [`L3 · ${t("l3.h2")}`, "cd l3", go("l3")], [`L4 · ${t("l4.h2")}`, "cd l4", go("l4")],
-      [t("nav.s"), "ls kit", go("stack")], [t("nav.c"), "ping", go("contact")],
-      [t("pal.morse"), "tx", () => { location.hash = "l4"; setTimeout(() => window.dispatchEvent(new Event("btt:morse")), 700); }],
-      [t("pal.lang"), "EN/VI", toggle],
-      ["GitHub", "@utnautiub", ext("https://github.com/utnautiub")], ["LinkedIn", "@buituantu", ext("https://linkedin.com/in/buituantu")],
-      ["Facebook", L("profile", "trang cá nhân"), ext("https://www.facebook.com/BUlTUANTU/")],
-    ] as [string, string, () => void][];
-  }, [lang, t, toggle]);
-  const shown = cmds.filter((c) => `${c[0]} ${c[1]}`.toLowerCase().includes(q.trim().toLowerCase()));
-  const cur = Math.min(sel, Math.max(0, shown.length - 1));
-
-  useEffect(() => { if (open) { setQ(""); setSel(0); input.current?.focus(); } }, [open]);
-  const run = (i: number) => { const c = shown[i]; if (c) { onClose(); c[2](); } };
-
-  return (
-    <div className={`pal${open ? " open" : ""}`} role="dialog" aria-modal="true" aria-label="Command palette" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="box">
-        <input ref={input} value={q} placeholder={t("pal.ph")} autoComplete="off" spellCheck={false}
-          onChange={(e) => { setQ(e.target.value); setSel(0); }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") onClose();
-            else if (e.key === "ArrowDown") { e.preventDefault(); setSel(Math.min(shown.length - 1, cur + 1)); }
-            else if (e.key === "ArrowUp") { e.preventDefault(); setSel(Math.max(0, cur - 1)); }
-            else if (e.key === "Enter") { e.preventDefault(); run(cur); }
-          }} />
-        <ul>
-          {shown.length ? shown.map((c, i) => <li key={c[0]} className={i === cur ? "sel" : ""} onClick={() => run(i)} onPointerMove={() => i !== cur && setSel(i)}><span>{c[0]}</span><small>{c[1]}</small></li>)
-            : <li><small>{t("pal.none")}</small></li>}
-        </ul>
-      </div>
     </div>
   );
 }

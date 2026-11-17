@@ -6,7 +6,7 @@ const en = {
   skip: "Skip to content",
   "nav.1": "University", "nav.2": "Work", "nav.3": "Service", "nav.4": "Now", "nav.s": "Tools", "nav.c": "Contact",
   "d.0": "Surface", "d.1": "University", "d.2": "Work", "d.3": "Service", "d.4": "Signal",
-  "hero.eyebrow": "Software Engineer · Signal Officer School cadet",
+  "hero.cadet": "Signal Officer School cadet",
   "hero.lede": "I'm Bùi Tuấn Tú. I went from an Information Systems student at Thuy Loi University to frontend, then backend, at 2NF Software. Then I served in the military, and I'm now a second-degree student at the Signal Officer School. This page is that route, one layer at a time.",
   "hero.cta": "Dive in", "hero.term": "Open the terminal", "hero.cue": "Scroll to go one layer down",
   "l1.tag": "Student", "l1.h2": "Thuy Loi University",
@@ -23,7 +23,10 @@ const en = {
   "ft.src": "Source", "ft.hint": "Press ⌘K / Ctrl K anywhere.",
   "p.theme": "Colour theme", "p.dark": "Dark", "p.light": "Light", "p.motion": "Motion", "p.sound": "Sound", "p.hud": "HUD", "p.on": "on", "p.off": "off",
   "hud.fps": "This tab, right now", "hud.close": "Close",
-  "pal.ph": "Type a command…", "pal.none": "No results", "pal.morse": "Send a Morse signal", "pal.lang": "Switch language",
+  "pal.ph": "Search, or type a command: help", "pal.none": "No results", "pal.morse": "Send a Morse signal", "pal.lang": "Switch language",
+  "pal.go": "Go to", "pal.set": "Settings", "pal.links": "Links", "pal.fun": "Terminal", "pal.run": "Run", "pal.copy": "Copy email address", "pal.top": "Back to the top",
+  "pal.pulse": "Send a pulse through the stack", "pal.foot": "↑↓ move · ⏎ run · esc close",
+  "gauge": "depth",
 };
 
 export type Key = keyof typeof en;
@@ -32,7 +35,7 @@ const vi: Record<Key, string> = {
   skip: "Bỏ qua tới nội dung",
   "nav.1": "Đại học", "nav.2": "Đi làm", "nav.3": "Nhập ngũ", "nav.4": "Hiện tại", "nav.s": "Công cụ", "nav.c": "Liên hệ",
   "d.0": "Bề mặt", "d.1": "Đại học", "d.2": "Đi làm", "d.3": "Nhập ngũ", "d.4": "Thông tin",
-  "hero.eyebrow": "Kỹ sư phần mềm · Học viên Trường Sĩ quan Thông tin",
+  "hero.cadet": "Học viên Trường Sĩ quan Thông tin",
   "hero.lede": "Mình là Bùi Tuấn Tú. Từ sinh viên Hệ thống thông tin ở Trường Đại học Thủy lợi, mình đi làm frontend rồi backend tại 2NF Software, sau đó lên đường nhập ngũ, và giờ là học viên văn bằng 2 tại Trường Sĩ quan Thông tin. Trang này kể lại chặng đường đó, mỗi lần một tầng.",
   "hero.cta": "Lặn xuống", "hero.term": "Mở terminal", "hero.cue": "Cuộn để xuống thêm một tầng",
   "l1.tag": "Sinh viên", "l1.h2": "Trường Đại học Thủy lợi",
@@ -49,7 +52,10 @@ const vi: Record<Key, string> = {
   "ft.src": "Mã nguồn", "ft.hint": "Nhấn ⌘K / Ctrl K ở bất kỳ đâu.",
   "p.theme": "Giao diện", "p.dark": "Tối", "p.light": "Sáng", "p.motion": "Chuyển động", "p.sound": "Âm thanh", "p.hud": "HUD", "p.on": "bật", "p.off": "tắt",
   "hud.fps": "Tab này, hiện tại", "hud.close": "Đóng",
-  "pal.ph": "Gõ lệnh…", "pal.none": "Không có kết quả", "pal.morse": "Phát tín hiệu Morse", "pal.lang": "Đổi ngôn ngữ",
+  "pal.ph": "Tìm, hoặc gõ lệnh: help", "pal.none": "Không có kết quả", "pal.morse": "Phát tín hiệu Morse", "pal.lang": "Đổi ngôn ngữ",
+  "pal.go": "Đi tới", "pal.set": "Cài đặt", "pal.links": "Liên kết", "pal.fun": "Terminal", "pal.run": "Chạy", "pal.copy": "Chép địa chỉ email", "pal.top": "Về đầu trang",
+  "pal.pulse": "Phát một xung qua chồng tầng", "pal.foot": "↑↓ chọn · ⏎ chạy · esc đóng",
+  "gauge": "độ sâu",
 };
 
 export const DICT: Record<Lang, Record<Key, string>> = { en, vi };

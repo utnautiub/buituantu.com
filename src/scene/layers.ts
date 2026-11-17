@@ -113,6 +113,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       s.haloMat.blending = blend; s.haloMat.needsUpdate = true;
     });
     pointsMat.blending = blend; pointsMat.needsUpdate = true;
+    sparkMat.blending = blend; sparkMat.needsUpdate = true; starMat.color.set(light ? 0x4b535e : 0x9aa4b8);
     paintAll();
   };
 
@@ -123,6 +124,21 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     const mesh = new THREE.LineLoop(ringGeo, mat); mesh.visible = false; mesh.renderOrder = 90; stack.add(mesh);
     return { mesh, mat, t: 2 };
   });
+
+  /* a still field of faint stars around the stack, and two rings of sparks that orbit the current slab */
+  const starPos = new Float32Array(260 * 3);
+  for (let i = 0; i < 260; i++) {
+    const a = Math.random() * Math.PI * 2, rad = 5.5 + Math.random() * 8, h = (Math.random() - 0.5) * 16;
+    starPos[i * 3] = Math.cos(a) * rad; starPos[i * 3 + 1] = h; starPos[i * 3 + 2] = Math.sin(a) * rad;
+  }
+  const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ size: 0.05, map: dotTex, color: 0x9aa4b8, transparent: true, opacity: 0, depthWrite: false });
+  const stars = new THREE.Points(starGeo, starMat); stars.frustumCulled = false; stars.renderOrder = 1; stack.add(stars);
+
+  const SPARKS = 44, sparkPos = new Float32Array(SPARKS * 2 * 3);
+  const sparkAttr = new THREE.BufferAttribute(sparkPos, 3), sparkGeo = new THREE.BufferGeometry(); sparkGeo.setAttribute("position", sparkAttr);
+  const sparkMat = new THREE.PointsMaterial({ size: 0.075, map: dotTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  const sparks = new THREE.Points(sparkGeo, sparkMat); sparks.frustumCulled = false; sparks.renderOrder = 95; stack.add(sparks);
 
   /* corner guide posts */
   const postMat = new THREE.LineDashedMaterial({ color: 0x7c8596, dashSize: 0.08, gapSize: 0.1, transparent: true, opacity: 0.35 });
@@ -241,6 +257,19 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     const y = (2 - cur) * GAP * (1 - over) + over * 0.25, far = (aspect < 1 ? Math.min(2.1, 1.08 / aspect) : 1) * (1 + over * 0.46);
     look.set(0, y, 0); camera.position.copy(camOff).multiplyScalar(far).add(look); camera.lookAt(look);
     stack.rotation.y = -0.62 + mx * 0.3 + over * Math.sin(clock * 0.25) * 0.25;
+    // sparks: two tilted rings turning in opposite directions around the slab in focus
+    const lit = clamp01(intro * 2 - 1), sy = slabs[Math.min(N - 1, ci)].group.position.y * (1 - over) + 0.1;
+    for (let k = 0; k < SPARKS; k++) {
+      const a = (k / SPARKS) * Math.PI * 2 + clock * 0.35, b = (k / SPARKS) * Math.PI * 2 - clock * 0.27, r1 = 3.1 + Math.sin(a * 3 + clock) * 0.08, r2 = 3.5;
+      let o = k * 3;
+      sparkPos[o] = Math.cos(a) * r1; sparkPos[o + 1] = sy + Math.sin(a) * 0.9 * (1 + over * 2.2); sparkPos[o + 2] = Math.sin(a) * r1 * 0.72;
+      o = (SPARKS + k) * 3;
+      sparkPos[o] = Math.cos(b) * r2; sparkPos[o + 1] = sy - Math.sin(b + 1) * 0.7 * (1 + over * 2.2); sparkPos[o + 2] = Math.sin(b) * r2 * 0.72;
+    }
+    sparkAttr.needsUpdate = true;
+    sparkMat.color.copy(COL[Math.min(N - 1, ci)]); sparkMat.opacity = lit * (light ? 0.55 : 0.9) * (0.55 + pulse * 0.45 + fovKick * 0.3);
+    starMat.opacity = lit * (light ? 0.35 : 0.6);
+
     stack.rotation.x = my * 0.09;
     stack.rotation.z = vel * 0.045;
     const wantFov = 32 + fovKick * 2.6 + Math.abs(vel) * 1.6;

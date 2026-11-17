@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DICT, LangCtx, initialLang, saveLang, type Key, type Lang, type LangApi } from "./i18n";
 import { initInteractions } from "./lib/interactions";
 import { scrambleAll, settleText } from "./lib/reveal";
-import { sweep } from "./lib/fx";
+import { initTrail, party, sweep } from "./lib/fx";
 import { setSound, sfx } from "./lib/sound";
 import { PrefsCtx, initialPrefs, savePrefs, type Prefs, type PrefsApi } from "./prefs";
 import { S } from "./store";
 import { useScrollState } from "./lib/useScrollState";
-import { Boot, Depth, Footer, Hud, Nav, Palette, Stage, useFocus } from "./components/Chrome";
+import { Boot, Depth, Footer, Gauge, Hud, Nav, Stage, useFocus } from "./components/Chrome";
+import { Palette } from "./components/Palette";
 import { Contact, Hero, Service, Signal, Tools, University, Work } from "./components/Sections";
 
 export function App() {
@@ -42,7 +43,8 @@ export function App() {
     S.ready = true; document.body.classList.add("ready"); S.kick();
     dispatchEvent(new Event("btt:ready"));
   }, []);
-  const where = useScrollState(main, bar, lang);
+  const mark = useRef<HTMLDivElement>(null), read = useRef<HTMLElement>(null), trail = useRef<HTMLCanvasElement>(null);
+  const where = useScrollState(main, bar, lang, mark, read);
   const [focus, setFocus] = useFocus(where.over);
   const [palette, setPalette] = useState(false);
   const [toast, setToast] = useState("");
@@ -56,6 +58,7 @@ export function App() {
   const firstLang = useRef(true);
   useEffect(() => {
     document.documentElement.lang = lang;
+    document.title = lang === "vi" ? "Bùi Tuấn Tú — Kỹ sư phần mềm · Software Engineer" : "Bùi Tuấn Tú — Software Engineer";
     if (firstLang.current) { firstLang.current = false; return; }
     scrambleAll(document.getElementById("root")!);
   }, [lang]);
@@ -78,6 +81,14 @@ export function App() {
     S.recolor();
   }, [where]);
   useEffect(() => initInteractions(ring.current!), []);
+  useEffect(() => initTrail(trail.current!), []);
+  // ↑↑↓↓←→←→BA
+  useEffect(() => {
+    const code = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"]; let at = 0;
+    const onKey = (e: KeyboardEvent) => { at = e.key === code[at] ? at + 1 : e.key === code[0] ? 1 : 0; if (at === code.length) { at = 0; party(); } };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette((o) => !o); } };
     document.addEventListener("keydown", onKey);
@@ -91,6 +102,9 @@ export function App() {
       <Boot onDone={onReady} />
       <Stage where={where} focus={focus} />
       <div className="sweep" ref={line} aria-hidden="true" />
+      <div className="txglow" aria-hidden="true" />
+      <canvas className="trail" ref={trail} aria-hidden="true" />
+      <Gauge mark={mark} read={read} />
       <div className="ring" ref={ring}><i /></div>
       <Nav where={where} bar={bar} onPalette={openPalette} />
       <Depth where={where} focus={focus} onFocus={setFocus} />
@@ -104,7 +118,7 @@ export function App() {
         <Contact notify={setToast} />
       </main>
       <Footer />
-      <Palette open={palette} onClose={closePalette} />
+      <Palette open={palette} onClose={closePalette} notify={setToast} />
       <Hud />
       <div className={`toast${toast ? " on" : ""}`} role="status">{toast}</div>
     </LangCtx.Provider></PrefsCtx.Provider>

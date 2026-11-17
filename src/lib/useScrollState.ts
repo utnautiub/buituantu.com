@@ -6,13 +6,13 @@ import { S } from "../store";
 
 export interface Where { id: string; layer: number; index: number; over: boolean }
 
-export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObject<HTMLElement | null>, dep: unknown) {
+export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObject<HTMLElement | null>, dep: unknown, mark?: RefObject<HTMLElement | null>, read?: RefObject<HTMLElement | null>) {
   const [where, setWhere] = useState<Where>({ id: "top", layer: 0, index: 0, over: false });
 
   useEffect(() => {
     const root = main.current; if (!root) return;
     const secs = Array.from(root.querySelectorAll<HTMLElement>(":scope > section")).map((el) => ({ el, id: el.id, d: +el.dataset.d!, f: +el.dataset.f!, k: +(el.dataset.k || 0), layer: +el.dataset.layer!, c: 0 }));
-    let vh = innerHeight, maxY = 1, ticking = false, cur = "", prevY = scrollY, skew = 0;
+    let vh = innerHeight, maxY = 1, ticking = false, cur = "", prevY = scrollY, skew = 0, metres = -1;
     const marq = document.querySelector<HTMLElement>(".marq .track");
 
     const update = () => {
@@ -30,6 +30,10 @@ export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObje
       const near = t < 0.5 ? a : b; t = t * t * (3 - 2 * t);
       S.d = a.d + (b.d - a.d) * t; S.f = a.f + (b.f - a.f) * t; S.k = a.k + (b.k - a.k) * t; S.kick();
       if (bar.current) bar.current.style.transform = `scaleX(${sy / maxY})`;
+      // depth gauge: 10 m per layer, back to the surface in the closing overview
+      if (mark?.current) mark.current.style.transform = `translateY(${(Math.min(4, S.d) / 4) * (1 - S.f) * 200}px)`;
+      const m = Math.round(S.d * 10 * (1 - S.f));
+      if (m !== metres && read?.current) { metres = m; read.current.textContent = `−${String(m).padStart(2, "0")} m`; }
       if (near.id !== cur) { cur = near.id; setWhere({ id: near.id, layer: near.layer, index: Math.round(near.d), over: near.f >= 1 }); }
     };
     const measure = () => {
@@ -44,7 +48,7 @@ export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObje
     const ro = new ResizeObserver(measure); ro.observe(root);
     measure();
     return () => { removeEventListener("scroll", onScroll); removeEventListener("resize", measure); removeEventListener("load", measure); ro.disconnect(); };
-  }, [main, bar, dep]);
+  }, [main, bar, dep, mark, read]);
 
   return where;
 }

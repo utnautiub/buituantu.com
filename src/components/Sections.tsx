@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import { EXP, HEADLINE, LINKS, MAIL_B64, MARQUEE, SIGNOFF, TOOLS, type ExpKey } from "../data";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { EXP, HEADLINE, LINKS, MAIL_B64, MARQUEE, ROLES, SIGNOFF, TOOLS, type ExpKey } from "../data";
 import { useLang } from "../i18n";
 import { S } from "../store";
 import { morseTone, sfx } from "../lib/sound";
@@ -11,11 +11,22 @@ const onOverview = () => S.f > 0.5;
 
 export function Hero({ onPalette }: { onPalette: () => void }) {
   const { lang, t } = useLang();
+  // The role in the eyebrow flips through the list every few seconds.
+  const [role, setRole] = useState(0);
+  useEffect(() => { const id = setInterval(() => { if (!S.rm && !document.hidden) setRole((r) => r + 1); }, 2800); return () => clearInterval(id); }, []);
+  // The whole headline leans a little towards the pointer.
+  const tilt = useRef<HTMLDivElement>(null), raf = useRef(0);
+  const onMove = (e: PointerEvent<HTMLElement>) => {
+    if (S.rm || e.pointerType === "touch" || raf.current) return;
+    const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
+    raf.current = requestAnimationFrame(() => { raf.current = 0; tilt.current?.style.setProperty("--tx", x.toFixed(3)); tilt.current?.style.setProperty("--ty", y.toFixed(3)); });
+  };
+  const roles = ROLES[lang];
   return (
-    <section className="sec hero" id="top" data-d="0" data-f="0" data-layer="0">
+    <section className="sec hero" id="top" data-d="0" data-f="0" data-layer="0" onPointerMove={onMove}>
       <div className="wrap"><div className="col">
-        <div className="eyebrow">{t("hero.eyebrow")}</div>
-        <KineticHeading key={lang} as="h1" parts={HEADLINE[lang]} idle={onHero} wave="load" />
+        <div className="eyebrow"><span className="flip" key={`${lang}${role}`}>{roles[role % roles.length]}</span><span>· {t("hero.cadet")}</span></div>
+        <div className="tilt" ref={tilt}><KineticHeading key={lang} as="h1" parts={HEADLINE[lang]} idle={onHero} wave="load" /></div>
         <R as="p" className="lede" i={6}>{t("hero.lede")}</R>
         <R className="cta" i={7}>
           <a className="btn btn--p mag" href="#l1">{t("hero.cta")} ↓</a>
@@ -111,7 +122,7 @@ export function Signal() {
   const { t } = useLang();
   const [text, setText] = useState("BTT"), [marks, setMarks] = useState(() => encode("BTT")), [lit, setLit] = useState(0), [lamp, setLampState] = useState(false);
   const run = useRef(0), value = useRef(text); value.current = text;
-  const setLamp = (v: boolean) => { setLampState(v); S.lamp = v ? 1 : 0; S.kick(); morseTone(v); };
+  const setLamp = (v: boolean) => { setLampState(v); S.lamp = v ? 1 : 0; S.kick(); morseTone(v); document.body.classList.toggle("tx", v); };
 
   const play = useCallback(() => {
     const msg = plain(value.current) || "BTT", seq = encode(msg), id = ++run.current, unit = 85;
@@ -127,7 +138,10 @@ export function Signal() {
     };
     next();
   }, []);
-  useEffect(() => { addEventListener("btt:morse", play); return () => { removeEventListener("btt:morse", play); run.current++; S.lamp = 0; morseTone(false); }; }, [play]);
+  useEffect(() => {
+    // The palette can ask for a transmission, optionally with its own message: `morse hello`.
+    const onAsk = (e: Event) => { const d = (e as CustomEvent).detail; if (typeof d === "string" && d) value.current = d; play(); };
+    addEventListener("btt:morse", onAsk); return () => { removeEventListener("btt:morse", onAsk); run.current++; S.lamp = 0; morseTone(false); }; }, [play]);
 
   return (
     <section className="sec" id="l4" data-d="4" data-f="0" data-layer="4">
@@ -199,7 +213,18 @@ export function Contact({ notify }: { notify: (msg: string) => void }) {
         <KineticHeading key={lang} as="h2" parts={SIGNOFF[lang]} idle={onOverview} wave="reveal" />
         <R className="links" i={2} onPointerLeave={() => point(-1)}>
           <button className="lk mag" onClick={copy} style={{ "--n": 0 } as CSSProperties} onPointerEnter={() => point(0)} onFocus={() => point(0)} onBlur={() => point(-1)}>
-            <span className="ic ic--m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5 21 3Z" /></svg></span>
+            <span className="ic ic--m">
+              {/* An envelope with a letter ruled in the five layer colours; the letter rises on hover. */}
+              <svg viewBox="0 0 36 36" aria-hidden="true">
+                <rect className="m-back" x="5" y="13" width="26" height="17" rx="3" />
+                <g className="m-letter">
+                  <rect x="9" y="7" width="18" height="18" rx="2" fill="var(--ink)" />
+                  {[0, 1, 2, 3, 4].map((i) => <rect key={i} x="12" y={10.5 + i * 2.6} width={i === 0 ? 8 : 12 - (i % 2) * 3} height="1.5" rx=".75" fill={`var(--l${i})`} />)}
+                </g>
+                <path className="m-front" d="M5 16 18 24.5 31 16V27a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3Z" />
+                <path className="m-fold" d="M5.8 29.2 15.4 22.6M30.2 29.2 20.6 22.6" />
+              </svg>
+            </span>
             <span><b>{t("ct.mail")}</b><small>{mail || t("ct.mail.s")}</small></span>
           </button>
           {LINKS.map((l, i) => (
