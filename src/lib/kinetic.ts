@@ -77,7 +77,7 @@ export class Kinetic {
     this.kick();
   }
 
-  private kick() { if (!this.raf && !S.rm) { this.last = performance.now(); this.raf = requestAnimationFrame(this.frame); } }
+  private kick() { if (!this.raf && !S.rm) { this.h.classList.add("kin-on"); this.last = performance.now(); this.raf = requestAnimationFrame(this.frame); } }
 
   private frame = (t: number) => {
     const dt = Math.min(1 / 30, Math.max(0, t - this.last) / 1000 || 1 / 60); this.last = t;
@@ -106,6 +106,7 @@ export class Kinetic {
     if (best >= 0 && best !== this.near) sfx.letter(best / Math.max(1, this.letters.length - 1));
     this.near = best;
     this.raf = moving ? requestAnimationFrame(this.frame) : 0;
+    if (!moving) this.h.classList.remove("kin-on");
   };
 
   destroy() {

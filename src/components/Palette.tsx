@@ -1,6 +1,6 @@
 // The command palette (⌘K / Ctrl K). The listed commands are searchable; anything else that is typed is
 // run as a terminal command and answered in the output pane.
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { LINKS, MAIL_B64, TOOLS } from "../data";
 import { useLang } from "../i18n";
 import { usePrefs } from "../prefs";
@@ -10,7 +10,7 @@ import { sfx } from "../lib/sound";
 
 interface Cmd { label: string; hint: string; group: "go" | "set" | "links" | "fun"; run: () => void; keep?: boolean }
 
-export function Palette({ open, onClose, notify, onExplore, onShowcase }: { open: boolean; onClose: () => void; notify: (m: string) => void; onExplore: () => void; onShowcase: () => void }) {
+export const Palette = memo(function Palette({ open, onClose, notify, onExplore, onShowcase }: { open: boolean; onClose: () => void; notify: (m: string) => void; onExplore: () => void; onShowcase: () => void }) {
   const { lang, t, toggle } = useLang();
   const p = usePrefs();
   const [q, setQ] = useState(""), [sel, setSel] = useState(0), [log, setLog] = useState<string[]>([]);
@@ -143,4 +143,4 @@ export function Palette({ open, onClose, notify, onExplore, onShowcase }: { open
       </div>
     </div>
   );
-}
+});

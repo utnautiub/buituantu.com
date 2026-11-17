@@ -13,7 +13,7 @@ export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObje
     const root = main.current; if (!root) return;
     const secs = Array.from(root.querySelectorAll<HTMLElement>(":scope > section")).map((el) => ({ el, id: el.id, d: +el.dataset.d!, f: +el.dataset.f!, k: +(el.dataset.k || 0), layer: +el.dataset.layer!, c: 0 }));
     let vh = innerHeight, maxY = 1, ticking = false, cur = "", prevY = scrollY, skew = 0, metres = -1;
-    const marq = document.querySelector<HTMLElement>(".marq .track");
+    const marq = document.querySelector<HTMLElement>(".marq");
 
     const update = () => {
       ticking = false;
@@ -22,7 +22,7 @@ export function useScrollState(main: RefObject<HTMLElement | null>, bar: RefObje
       const v = sy - prevY; prevY = sy; S.vel = v;
       skew += (Math.max(-14, Math.min(14, v * 0.45)) - skew) * 0.2;
       if (Math.abs(skew) < 0.05) skew = 0;
-      marq?.style.setProperty("--skew", S.rm ? "0deg" : `${(-skew).toFixed(2)}deg`);
+      if (marq) marq.style.transform = S.rm || !skew ? "" : `skewX(${(-skew).toFixed(2)}deg)`;
       if (v !== 0 || skew !== 0) { ticking = true; requestAnimationFrame(update); }
       let a = secs[0], b = secs[0], t = 0;
       if (mid >= secs[n - 1].c) a = b = secs[n - 1];

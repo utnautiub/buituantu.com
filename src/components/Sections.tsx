@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { EXP, HEADLINE, LINKS, MAIL_B64, MARQUEE, ROLES, SIGNOFF, TOOLS, type ExpKey } from "../data";
 import { useLang } from "../i18n";
 import { S } from "../store";
@@ -9,7 +9,7 @@ import { KineticHeading, R, Scr } from "./ui";
 const onHero = () => S.d < 0.6;
 const onOverview = () => S.f > 0.5;
 
-export function Hero({ onPalette }: { onPalette: () => void }) {
+export const Hero = memo(function Hero({ onPalette }: { onPalette: () => void }) {
   const { lang, t } = useLang();
   // The role in the eyebrow flips through the list every few seconds.
   const [role, setRole] = useState(0);
@@ -19,7 +19,11 @@ export function Hero({ onPalette }: { onPalette: () => void }) {
   const onMove = (e: PointerEvent<HTMLElement>) => {
     if (S.rm || e.pointerType === "touch" || raf.current) return;
     const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
-    raf.current = requestAnimationFrame(() => { raf.current = 0; tilt.current?.style.setProperty("--tx", x.toFixed(3)); tilt.current?.style.setProperty("--ty", y.toFixed(3)); });
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const h = tilt.current?.firstElementChild as HTMLElement | null;
+      if (h) h.style.transform = `rotateX(${(y * -8).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg)`;
+    });
   };
   const roles = ROLES[lang];
   return (
@@ -36,9 +40,9 @@ export function Hero({ onPalette }: { onPalette: () => void }) {
       </div></div>
     </section>
   );
-}
+});
 
-export function University() {
+export const University = memo(function University() {
   const { t } = useLang();
   return (
     <section className="sec" id="l1" data-d="1" data-f="0" data-layer="1">
@@ -52,9 +56,9 @@ export function University() {
       </div></div>
     </section>
   );
-}
+});
 
-export function Work() {
+export const Work = memo(function Work() {
   const { lang, t } = useLang();
   const [k, setK] = useState<ExpKey>("fe");
   const seg = useRef<HTMLDivElement>(null);
@@ -90,9 +94,9 @@ export function Work() {
       </div></div>
     </section>
   );
-}
+});
 
-export function Service() {
+export const Service = memo(function Service() {
   const { t } = useLang();
   return (
     <section className="sec sec--short" id="l3" data-d="3" data-f="0" data-layer="3">
@@ -103,7 +107,7 @@ export function Service() {
       </div></div>
     </section>
   );
-}
+});
 
 const MORSE: Record<string, string> = { A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....", I: "..", J: ".---", K: "-.-", L: ".-..", M: "--", N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.", S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-", Y: "-.--", Z: "--..", 0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-", 5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----." };
 type Mark = { kind: "d" | "h" | "gap" | "space"; units: number };
@@ -119,7 +123,7 @@ function encode(text: string): Mark[] {
   return out;
 }
 
-export function Signal() {
+export const Signal = memo(function Signal() {
   const { t } = useLang();
   const [text, setText] = useState("BTT"), [marks, setMarks] = useState(() => encode("BTT")), [lit, setLit] = useState(0), [lamp, setLampState] = useState(false);
   const run = useRef(0), value = useRef(text); value.current = text;
@@ -170,9 +174,9 @@ export function Signal() {
       </div></div>
     </section>
   );
-}
+});
 
-export function Tools() {
+export const Tools = memo(function Tools() {
   const { lang, t } = useLang();
   const point = (i: number) => { if (S.tool === i) return; S.tool = i; S.kick(); if (i >= 0) sfx.tool(i); };
   return (
@@ -198,9 +202,9 @@ export function Tools() {
       </section>
     </>
   );
-}
+});
 
-export function Contact({ notify }: { notify: (msg: string) => void }) {
+export const Contact = memo(function Contact({ notify }: { notify: (msg: string) => void }) {
   const { lang, t } = useLang();
   const [mail, setMail] = useState("");
   // Each card is tied to a tile laid on top of the stack on the right: hover one and its tile lifts.
@@ -240,4 +244,4 @@ export function Contact({ notify }: { notify: (msg: string) => void }) {
       </div></div>
     </section>
   );
-}
+});

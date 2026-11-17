@@ -25,7 +25,9 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   const root = document.documentElement;
   let tier = (navigator.hardwareConcurrency || 4) >= 8 ? 0 : 1;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: TIERS[tier].aa, powerPreference: "high-performance" });
+  // Same resolution either way. On screens of 1.5x density and up, multisampling costs a lot of GPU time
+  // for edges that are already fine, so it is only switched on below that.
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: TIERS[tier].aa && (devicePixelRatio || 1) < 1.5, powerPreference: "high-performance" });
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);

@@ -1,6 +1,6 @@
 // Explore mode: the 3D stack takes over the screen and can be handled directly. The scene does the
 // orbiting, hovering and presenting (scene/layers.ts); this is the controls and the facts about each layer.
-import { useEffect, useState, type CSSProperties } from "react";
+import { memo, useEffect, useState, type CSSProperties } from "react";
 import { useLang, type Key } from "../i18n";
 import { S } from "../store";
 import { sfx } from "../lib/sound";
@@ -23,7 +23,7 @@ export function useExplore() {
   return [open, setOpen] as const;
 }
 
-export function Explore({ open, onClose }: { open: boolean; onClose: () => void }) {
+export const Explore = memo(function Explore({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useLang();
   const [pick, setPickState] = useState(-1), [hover, setHover] = useState(-1), [spread, setSpread] = useState(false);
   const tr = (k: Key | string) => (k in DICT_KEYS ? t(k as Key) : k);
@@ -103,7 +103,7 @@ export function Explore({ open, onClose }: { open: boolean; onClose: () => void 
       <div className="xui__hint">{t(pick >= 0 ? "x.hint2" : "x.hint")}<span>{t("x.keys")}</span></div>
     </div>
   );
-}
+});
 
 /** Which strings in LAYERS are translation keys rather than literal text. */
 const DICT_KEYS: Record<string, true> = Object.fromEntries(

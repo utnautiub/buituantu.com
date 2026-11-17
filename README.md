@@ -64,3 +64,13 @@ To use these components inside the existing Next.js site, copy `src/` in, add `"
 - All URLs assume the site is served at https://buituantu.com/. Change them in `index.html`,
   `public/robots.txt` and `public/sitemap.xml` if it lives elsewhere.
 - The logo is also `src/components/Logo.tsx`, coloured from the theme so it follows light and dark mode.
+
+## Performance notes
+
+- Headline letters only get their own compositor layer while they are moving (`.kin-on`); idle, they are
+  painted together. Keeping `will-change` on every letter created about 40 extra layers.
+- Overlays that are invisible most of the time (cursor trail, layer sweep, Morse edge glow, the CSS stack
+  when WebGL is running) are `visibility: hidden` while idle, so they are not composited.
+- Infinite animations only touch `transform` or `opacity`, so they stay on the GPU.
+- Components that do not depend on the scroll position are wrapped in `memo`.
+- The 3D scene renders on demand and multisamples only below 1.5x pixel density.

@@ -4,7 +4,7 @@
 import { S } from "../store";
 
 const SPEED = 70;   // px per second
-const HOLD = 200;  // ms on the name
+const HOLD = 0;  // ms on the name
 
 export function initNameMarquee(box: HTMLElement, track: HTMLElement) {
   let x = 0, raf = 0, last = 0, visible = false, half = 1, goal = 0, gas = 1, timer = 0;

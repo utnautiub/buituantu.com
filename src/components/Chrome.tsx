@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { RAIL, useLang } from "../i18n";
 import { usePrefs } from "../prefs";
 import { Logo } from "./Logo";
@@ -104,7 +104,7 @@ export function Stage({ where, focus }: { where: Where; focus: number }) {
 
 const Ico = ({ d }: { d: string }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.900" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 
-export function Footer() {
+export const Footer = memo(function Footer() {
   const { t } = useLang();
   const p = usePrefs();
   const onoff = (v: boolean) => t(v ? "p.on" : "p.off");
@@ -125,11 +125,11 @@ export function Footer() {
       </span>
     </div></footer>
   );
-}
+});
 
 /** A depth gauge on the right edge: a marker that sinks as you scroll, with the depth in metres.
  *  The marker and the number are written directly by the scroll handler (see useScrollState). */
-export function Gauge({ mark, read }: { mark: RefObject<HTMLDivElement | null>; read: RefObject<HTMLElement | null> }) {
+export const Gauge = memo(function Gauge({ mark, read }: { mark: RefObject<HTMLDivElement | null>; read: RefObject<HTMLElement | null> }) {
   const { t } = useLang();
   return (
     <div className="gauge" aria-hidden="true">
@@ -137,7 +137,7 @@ export function Gauge({ mark, read }: { mark: RefObject<HTMLDivElement | null>; 
       <div className="gauge__rail">{Array.from({ length: 21 }, (_, i) => <i key={i} className={i % 5 === 0 ? "maj" : ""} />)}<div className="gauge__mark" ref={mark}><b ref={read}>−00 m</b></div></div>
     </div>
   );
-}
+});
 
 /** The opening sequence: five layer-coloured bands fill the screen while a counter runs, then slide away. */
 export function Boot({ onDone }: { onDone: () => void }) {
@@ -165,7 +165,7 @@ export function Boot({ onDone }: { onDone: () => void }) {
 }
 
 /** A small live frame-rate readout for this tab. Its loop only runs while it is switched on. */
-export function Hud() {
+export const Hud = memo(function Hud() {
   const { t } = useLang();
   const p = usePrefs();
   const out = useRef<HTMLElement>(null);
@@ -187,7 +187,7 @@ export function Hud() {
       <button onClick={() => p.flip("hud")} aria-label={t("hud.close")}>×</button>
     </div>
   );
-}
+});
 
 /** Marks which layer the rail is pointing at, for the scene and for React. */
 export function useFocus(over: boolean) {

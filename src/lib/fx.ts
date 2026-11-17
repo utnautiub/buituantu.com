@@ -34,7 +34,9 @@ export function sweep(el: HTMLElement, down: boolean) {
   if (S.rm) return;
   el.dataset.dir = down ? "down" : "up";
   const from = down ? "-6vh" : "106vh", to = down ? "106vh" : "-6vh";
-  el.animate([{ transform: `translateY(${from})`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 0.9, offset: 0.7 }, { transform: `translateY(${to})`, opacity: 0 }], { duration: 950, easing: "cubic-bezier(.6,0,.2,1)" });
+  el.style.visibility = "visible";
+  el.getAnimations().forEach((a) => a.cancel());
+  el.animate([{ transform: `translateY(${from})`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 0.9, offset: 0.7 }, { transform: `translateY(${to})`, opacity: 0 }], { duration: 950, easing: "cubic-bezier(.6,0,.2,1)" }).onfinish = () => { el.style.visibility = "hidden"; };
 }
 
 /** A comet tail behind the pointer, drawn on one overlay canvas that only animates while the tail is alive. */
@@ -48,7 +50,7 @@ export function initTrail(canvas: HTMLCanvasElement) {
   const draw = (now: number) => {
     while (pts.length && now - pts[0].t > LIFE) pts.shift();
     g.clearRect(0, 0, canvas.width, canvas.height);
-    if (pts.length < 2 || S.rm) { raf = 0; pts.length = 0; return; }
+    if (pts.length < 2 || S.rm) { raf = 0; pts.length = 0; canvas.style.visibility = "hidden"; return; }
     g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = color;
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1], b = pts[i], k = i / pts.length, life = 1 - (now - b.t) / LIFE;
@@ -65,8 +67,9 @@ export function initTrail(canvas: HTMLCanvasElement) {
     if (!pts.length) color = getComputedStyle(document.documentElement).getPropertyValue("--acc").trim() || color;
     pts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
     if (pts.length > 40) pts.shift();
-    if (!raf) raf = requestAnimationFrame(draw);
+    if (!raf) { canvas.style.visibility = "visible"; raf = requestAnimationFrame(draw); }
   };
+  canvas.style.visibility = "hidden";
   resize();
   addEventListener("resize", resize); addEventListener("pointermove", onMove, { passive: true });
   return () => { cancelAnimationFrame(raf); removeEventListener("resize", resize); removeEventListener("pointermove", onMove); };
