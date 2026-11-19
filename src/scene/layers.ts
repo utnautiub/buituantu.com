@@ -5,6 +5,7 @@
 import { S } from "../store";
 import { LINKS, TOOLS } from "../data";
 import { Q, drawingRatio } from "../lib/quality";
+import { mountAurora } from "../lib/aurora";
 import { loadLogos, paintLayer, paintTile, TEX_H, TEX_W, TILE_H, TILE_W } from "./textures";
 
 export interface LayerScene { dispose(): void }
@@ -21,9 +22,21 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   const root = document.documentElement;
   const prof = Q[S.quality];
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: prof.aa, powerPreference: "high-performance", stencil: false });
-  renderer.setClearColor(0x000000, 0);
+  // Opaque on purpose. A transparent full-window canvas is blended over the page at the
+  // monitor's resolution every frame, which is the hitch on a large screen. The aurora is
+  // painted into this same context, behind the slabs, so nothing has to show through.
+  // three.js r160 asks for a transparent drawing buffer no matter what we pass it, so the
+  // context is created here. A transparent buffer is blended at the monitor's own resolution.
+  const glAttrs: WebGLContextAttributes = { alpha: false, depth: true, stencil: false, antialias: prof.aa, premultipliedAlpha: true, powerPreference: "high-performance" };
+  const gl = canvas.getContext("webgl2", glAttrs) ?? canvas.getContext("webgl", glAttrs);
+  if (!gl) throw new Error("WebGL unavailable");
+  const renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: prof.aa, stencil: false, powerPreference: "high-performance" });
+  const pageBg = new THREE.Color("#07080b");
+  const syncBg = () => { pageBg.set(getComputedStyle(root).getPropertyValue("--bg").trim() || "#07080b"); renderer.setClearColor(pageBg, 1); };
+  syncBg();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.autoClear = false;
+  const aurora = mountAurora(THREE, renderer);
   const aniso = Math.min(renderer.capabilities.getMaxAnisotropy(), prof.aniso);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
@@ -112,6 +125,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   };
   const retheme = () => {
     light = root.dataset.theme === "light";
+    syncBg();
     const hex = readHex(), blend = light ? THREE.NormalBlending : THREE.AdditiveBlending;
     slabs.forEach((s, i) => {
       s.hex = hex[i]; COL[i].set(hex[i]);
@@ -119,7 +133,6 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       s.haloMat.blending = blend; s.haloMat.needsUpdate = true;
     });
     pointsMat.blending = blend; pointsMat.needsUpdate = true;
-    sparkMat.blending = blend; sparkMat.needsUpdate = true; starMat.color.set(light ? 0x4b535e : 0x9aa4b8);
     paintAll();
   };
 
@@ -131,21 +144,6 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     const mesh = new THREE.LineLoop(ringGeo, mat); mesh.visible = false; mesh.renderOrder = 90; stack.add(mesh);
     return { mesh, mat, t: 2 };
   });
-
-  /* a still field of faint stars around the stack, and two rings of sparks that orbit the current slab */
-  const starPos = new Float32Array(260 * 3);
-  for (let i = 0; i < 260; i++) {
-    const a = Math.random() * Math.PI * 2, rad = 5.5 + Math.random() * 8, h = (Math.random() - 0.5) * 16;
-    starPos[i * 3] = Math.cos(a) * rad; starPos[i * 3 + 1] = h; starPos[i * 3 + 2] = Math.sin(a) * rad;
-  }
-  const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-  const starMat = new THREE.PointsMaterial({ size: 0.05, map: dotTex, color: 0x9aa4b8, transparent: true, opacity: 0, depthWrite: false });
-  const stars = new THREE.Points(starGeo, starMat); stars.frustumCulled = false; stars.renderOrder = 1; stack.add(stars);
-
-  const SPARKS = 44, sparkPos = new Float32Array(SPARKS * 2 * 3);
-  const sparkAttr = new THREE.BufferAttribute(sparkPos, 3), sparkGeo = new THREE.BufferGeometry(); sparkGeo.setAttribute("position", sparkAttr);
-  const sparkMat = new THREE.PointsMaterial({ size: 0.075, map: dotTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
-  const sparks = new THREE.Points(sparkGeo, sparkMat); sparks.frustumCulled = false; sparks.renderOrder = 95; stack.add(sparks);
 
   /* corner guide posts */
   const postMat = new THREE.LineDashedMaterial({ color: 0x7c8596, dashSize: 0.08, gapSize: 0.1, transparent: true, opacity: 0.35 });
@@ -170,6 +168,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   const resize = () => {
     vw = innerWidth; vh = innerHeight; aspect = vw / vh;
     const ratio = drawingRatio(S.quality); renderer.setPixelRatio(ratio); renderer.setSize(vw, vh, false); root.dataset.dpr = ratio.toFixed(2);
+    aurora.resize(vw, vh);
     camera.aspect = aspect;
     // Keep the stack on the clear side of the viewport: right on wide screens, low on tall ones.
     if (aspect >= 1.05) { nOffX = -vw * 0.22; nOffY = 0; } else { nOffX = 0; nOffY = -vh * 0.28; }
@@ -307,9 +306,11 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       s.topMat.opacity = fade * f * (i === N - 1 ? 1 - kit * 0.6 : i === 0 ? 1 - smooth(0.55, 1, fin) * 0.6 : 1);
       s.bodyMat.opacity = fade * (light ? 0.6 : 0.28) * f;
       s.edgeMat.opacity = fade * (0.45 + Math.min(1, near) * 0.55) * (1 - dim * (1 - s.foc) * 0.6);
-      s.haloMat.opacity = Math.min(1, fade * (0.12 + near * 0.35 + hit * 0.5 + lit * 0.55 + s.foc * 0.35)) * (light ? 0.4 : 1);
+      // Only the slab you are on keeps its glow. A faint halo on every slab is a full-screen fill.
+      s.haloMat.opacity = Math.min(1, fade * (near * 0.5 + hit * 0.5 + lit * 0.55 + s.foc * 0.4)) * (light ? 0.4 : 1);
       s.halo.scale.setScalar(1 + hit * 0.22 + lit * 0.1 + s.foc * 0.12 + s.hov * 0.15);
       if (s.hov > 0.01) { s.haloMat.opacity = Math.min(1, s.haloMat.opacity + s.hov * 0.4); s.edgeMat.opacity = Math.min(1, s.edgeMat.opacity + s.hov * 0.5); }
+      s.halo.visible = s.haloMat.opacity > 0.04;
       if (s.pk > 0.01) { s.topMat.opacity = Math.max(s.topMat.opacity, s.pk); s.edgeMat.opacity = Math.max(s.edgeMat.opacity, s.pk); }
       s.group.visible = fade > 0.01;
     });
@@ -349,19 +350,6 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     }
     posAttr.needsUpdate = true; colAttr.needsUpdate = true;
 
-    // sparks: two tilted rings turning in opposite directions around the slab in focus
-    const lit = clamp01(intro * 2 - 1), sy = slabs[Math.min(N - 1, ci)].group.position.y * (1 - over) + 0.1;
-    for (let k = 0; k < SPARKS; k++) {
-      const a = (k / SPARKS) * Math.PI * 2 + clock * 0.35, b = (k / SPARKS) * Math.PI * 2 - clock * 0.27, r1 = 3.1 + Math.sin(a * 3 + clock) * 0.08, r2 = 3.5;
-      let o = k * 3;
-      sparkPos[o] = Math.cos(a) * r1; sparkPos[o + 1] = sy + Math.sin(a) * 0.9 * (1 + over * 2.2); sparkPos[o + 2] = Math.sin(a) * r1 * 0.72;
-      o = (SPARKS + k) * 3;
-      sparkPos[o] = Math.cos(b) * r2; sparkPos[o + 1] = sy - Math.sin(b + 1) * 0.7 * (1 + over * 2.2); sparkPos[o + 2] = Math.sin(b) * r2 * 0.72;
-    }
-    sparkAttr.needsUpdate = true;
-    sparkMat.color.copy(COL[Math.min(N - 1, ci)]); sparkMat.opacity = lit * (light ? 0.55 : 0.9) * (0.55 + pulse * 0.45 + fovKick * 0.3) * (1 - xe * 0.6);
-    starMat.opacity = lit * (light ? 0.35 : 0.6);
-
   };
 
   // Quality stays where the visitor set it. Only a lost context hands the picture to the CSS stack.
@@ -378,7 +366,13 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     bank += ms;
     if (bank < budget) { raf = requestAnimationFrame(frame); return; }
     const step = bank; bank = 0;
-    update(step / 1000); renderer.render(scene, camera);
+    update(step / 1000);
+    aurora.step(step / 1000, mx + 0.5, 0.5 - my);
+    renderer.setRenderTarget(null);
+    renderer.clear(true, true, false);
+    aurora.blit();
+    renderer.clearDepth();
+    renderer.render(scene, camera);
     if (busy(now) && !paused && !document.hidden) raf = requestAnimationFrame(frame); else running = false;
   };
   function kick() { if (running || paused || dead || document.hidden) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
@@ -457,7 +451,9 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   S.pulse = () => { pulse = 1; boost = 1; kick(); };
   S.retheme = retheme;
 
-  paintAll(); resize(); update(0); renderer.render(scene, camera); kick();
+  paintAll(); resize(); update(0);
+  aurora.step(0, mx + 0.5, 0.5 - my); renderer.setRenderTarget(null); renderer.clear(true, true, false); aurora.blit(); renderer.clearDepth(); renderer.render(scene, camera);
+  kick();
   loadLogos(() => { if (!dead) paintAll(); });
   document.fonts?.ready.then(() => { if (!dead) paintAll(); });
 
@@ -469,6 +465,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       host.removeEventListener("pointerdown", onDown); host.removeEventListener("pointermove", onXMove);
       host.removeEventListener("pointerup", onUp); host.removeEventListener("pointercancel", onUp); host.removeEventListener("wheel", onWheel);
       S.kick = () => {}; S.pulse = () => {}; S.retheme = () => {};
+      aurora.dispose();
       renderer.dispose(); renderer.forceContextLoss();
     },
   };

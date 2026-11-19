@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DICT, LangCtx, initialLang, saveLang, type Key, type Lang, type LangApi } from "./i18n";
 import { initInteractions } from "./lib/interactions";
 import { scrambleAll, settleText } from "./lib/reveal";
-import { initTrail, party, sweep } from "./lib/fx";
+import { party, sweep } from "./lib/fx";
 import { setSound, sfx } from "./lib/sound";
 import { isQuality, type Quality } from "./lib/quality";
 import { PrefsCtx, initialPrefs, savePrefs, type Prefs, type PrefsApi } from "./prefs";
@@ -58,7 +58,7 @@ export function App() {
     S.ready = true; document.body.classList.add("ready"); S.kick();
     dispatchEvent(new Event("btt:ready"));
   }, []);
-  const mark = useRef<HTMLDivElement>(null), read = useRef<HTMLElement>(null), trail = useRef<HTMLCanvasElement>(null);
+  const mark = useRef<HTMLDivElement>(null), read = useRef<HTMLElement>(null);
   const where = useScrollState(main, bar, lang, mark, read);
   const [focus, setFocus] = useFocus(where.over);
   const setFocusRef = useRef(setFocus); setFocusRef.current = setFocus;
@@ -129,7 +129,6 @@ export function App() {
     S.recolor();
   }, [where]);
   useEffect(() => initInteractions(ring.current!), []);
-  useEffect(() => initTrail(trail.current!), []);
   // ↑↑↓↓←→←→BA
   useEffect(() => {
     const code = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"]; let at = 0;
@@ -151,7 +150,6 @@ export function App() {
       <Stage where={where} focus={focus} quality={prefs.quality} />
       <div className="sweep" ref={line} aria-hidden="true" />
       <div className="txglow" aria-hidden="true" />
-      <canvas className="trail" ref={trail} aria-hidden="true" />
       <Gauge mark={mark} read={read} />
       <div className="ring" ref={ring}><i /></div>
       <Nav where={where} bar={bar} onPalette={openPalette} />

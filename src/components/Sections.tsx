@@ -29,7 +29,6 @@ export const Hero = memo(function Hero({ onPalette }: { onPalette: () => void })
   return (
     <section className="sec hero" id="top" data-d="0" data-f="0" data-layer="0" onPointerMove={onMove}>
       <div className="wrap"><div className="col">
-        <div className="bloom" aria-hidden="true" />
         <div className="eyebrow"><span className="flip" key={`${lang}${role}`}>{roles[role % roles.length]}</span><span>· {t("hero.cadet")}</span></div>
         <div className="tilt" ref={tilt}><KineticHeading key={lang} as="h1" parts={HEADLINE[lang]} idle={onHero} wave="load" /></div>
         <R as="p" className="lede" i={6}>{t("hero.lede")}</R>

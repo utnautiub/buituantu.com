@@ -5,23 +5,12 @@ import { usePrefs } from "../prefs";
 import { Logo } from "./Logo";
 import { S } from "../store";
 import { createLayerScene } from "../scene/layers";
-import { initAurora } from "../lib/aurora";
 import { initNameMarquee } from "../lib/nameMarquee";
 import type { Where } from "../lib/useScrollState";
 
 const NAV: { href: string; key: "nav.1" | "nav.2" | "nav.3" | "nav.4" | "nav.s" | "nav.c" }[] = [
   { href: "l1", key: "nav.1" }, { href: "l2", key: "nav.2" }, { href: "l3", key: "nav.3" }, { href: "l4", key: "nav.4" }, { href: "stack", key: "nav.s" }, { href: "contact", key: "nav.c" },
 ];
-
-/** Drifting specks over the stack. Positions are fixed so a re-render does not restart them. */
-const MOTES: CSSProperties[] = Array.from({ length: 22 }, (_, i) => ({
-  left: `${(i * 43 + 5) % 100}%`,
-  animationDuration: `${16 + (i % 7) * 2.6}s`,
-  animationDelay: `${-(i * 1.15)}s`,
-  width: i % 5 === 0 ? 4 : 2,
-  height: i % 5 === 0 ? 4 : 2,
-  ["--dx" as string]: `${((i * 5) % 13 - 6) * 16}px`,
-}));
 
 export function Nav({ where, bar, onPalette }: { where: Where; bar: RefObject<HTMLDivElement | null>; onPalette: () => void }) {
   const { lang, t, toggle } = useLang();
@@ -90,8 +79,7 @@ export function Depth({ where, focus, onFocus }: { where: Where; focus: number; 
 
 /** The fixed 3D backdrop, with a CSS version of the stack underneath for when WebGL is not available. */
 export function Stage({ where, focus, quality }: { where: Where; focus: number; quality: Quality }) {
-  const canvas = useRef<HTMLCanvasElement>(null), aurora = useRef<HTMLCanvasElement>(null);
-  useEffect(() => initAurora(aurora.current!), []);
+  const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     S.quality = quality;
     const root = document.documentElement, off = () => { delete root.dataset.gl; delete root.dataset.dpr; };
@@ -103,9 +91,6 @@ export function Stage({ where, focus, quality }: { where: Where; focus: number; 
   }, [quality]);
   return (
     <div className="stage" aria-hidden="true">
-      <canvas className="aurora" ref={aurora} />
-      <div className="wash" />
-      <div className="wash wash--b" />
       <canvas className="gl" key={quality} ref={canvas} />
       <div className="cstack-wrap">
         <div className={`cstack${focus >= 0 ? " has-focus" : ""}`}>
@@ -116,8 +101,6 @@ export function Stage({ where, focus, quality }: { where: Where; focus: number; 
           ))}
         </div>
       </div>
-      <div className="motes" aria-hidden="true">{MOTES.map((style, i) => <span key={i} style={style} />)}</div>
-      <div className="grain" />
     </div>
   );
 }

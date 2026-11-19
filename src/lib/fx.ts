@@ -39,42 +39,6 @@ export function sweep(el: HTMLElement, down: boolean) {
   el.animate([{ transform: `translateY(${from})`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 0.9, offset: 0.7 }, { transform: `translateY(${to})`, opacity: 0 }], { duration: 950, easing: "cubic-bezier(.6,0,.2,1)" }).onfinish = () => { el.style.visibility = "hidden"; };
 }
 
-/** A comet tail behind the pointer, drawn on one overlay canvas that only animates while the tail is alive. */
-export function initTrail(canvas: HTMLCanvasElement) {
-  const g = canvas.getContext("2d");
-  if (!g || !matchMedia("(pointer: fine)").matches) return () => {};
-  const pts: { x: number; y: number; t: number }[] = [];
-  let raf = 0, color = "#ffb545";
-  const LIFE = 420;
-  const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
-  const draw = (now: number) => {
-    while (pts.length && now - pts[0].t > LIFE) pts.shift();
-    g.clearRect(0, 0, canvas.width, canvas.height);
-    if (pts.length < 2 || S.rm) { raf = 0; pts.length = 0; canvas.style.visibility = "hidden"; return; }
-    g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = color;
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1], b = pts[i], k = i / pts.length, life = 1 - (now - b.t) / LIFE;
-      g.globalAlpha = k * life * 0.16; g.lineWidth = 3 + k * 16;
-      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
-      g.globalAlpha = k * life * 0.8; g.lineWidth = 0.6 + k * 2.6;
-      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
-    }
-    g.globalAlpha = 1;
-    raf = requestAnimationFrame(draw);
-  };
-  const onMove = (e: PointerEvent) => {
-    if (S.rm || e.pointerType === "touch") return;
-    if (!pts.length) color = getComputedStyle(document.documentElement).getPropertyValue("--acc").trim() || color;
-    pts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-    if (pts.length > 40) pts.shift();
-    if (!raf) { canvas.style.visibility = "visible"; raf = requestAnimationFrame(draw); }
-  };
-  canvas.style.visibility = "hidden";
-  resize();
-  addEventListener("resize", resize); addEventListener("pointermove", onMove, { passive: true });
-  return () => { cancelAnimationFrame(raf); removeEventListener("resize", resize); removeEventListener("pointermove", onMove); };
-}
-
 /** Falling glyphs over the whole page for a few seconds. */
 export function matrix(ms = 5200) {
   const c = document.createElement("canvas"), g = c.getContext("2d");
