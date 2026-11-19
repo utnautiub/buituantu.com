@@ -1,19 +1,15 @@
 // The layer stack: five glass slabs, one per stage of the route. Scrolling peels the upper slabs away and
 // the camera follows the current one down; at the end of the page the whole stack reassembles.
-// Budget rules: render on demand, stop when idle or hidden, clamp the pixel ratio, and step quality down
-// (then hand over to the CSS stack) when the measured frame time says the device cannot keep up.
+// Sharpness follows the visitor's quality setting (pixel ratio, antialiasing, texture size, geometry).
+// Frames still stop when the page is idle or hidden. A lost WebGL context falls back to the CSS stack.
 import { S } from "../store";
 import { LINKS, TOOLS } from "../data";
+import { Q, drawingRatio } from "../lib/quality";
 import { loadLogos, paintLayer, paintTile, TEX_H, TEX_W, TILE_H, TILE_W } from "./textures";
 
 export interface LayerScene { dispose(): void }
 
 const N = 5, W = 4.2, D = (W * TEX_H) / TEX_W, GAP = 1.15;
-const TIERS = [
-  { dpr: 2, packets: 56, aa: true },
-  { dpr: 1.35, packets: 32, aa: true },
-  { dpr: 1, packets: 16, aa: false },
-];
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 /** Ease out with a little overshoot, for things that land. */
 const backOut = (t: number) => { const c = 1.70158, u = t - 1; return 1 + (c + 1) * u * u * u + c * u * u; };
@@ -23,12 +19,12 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   // three is loaded on demand so the page never waits for it, and so a failed load only costs the 3D.
   const THREE = await import("three");
   const root = document.documentElement;
-  let tier = (navigator.hardwareConcurrency || 4) >= 8 ? 0 : 1;
+  const prof = Q[S.quality];
 
-  // Same resolution either way. On screens of 1.5x density and up, multisampling costs a lot of GPU time
-  // for edges that are already fine, so it is only switched on below that.
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: TIERS[tier].aa && (devicePixelRatio || 1) < 1.5, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: prof.aa, powerPreference: prof.aa ? "high-performance" : "default" });
   renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const aniso = Math.min(renderer.capabilities.getMaxAnisotropy(), prof.aniso);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
   const stack = new THREE.Group();
@@ -44,9 +40,9 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   shape.moveTo(x0 + r, y0); shape.lineTo(x0 + W - r, y0); shape.quadraticCurveTo(x0 + W, y0, x0 + W, y0 + r);
   shape.lineTo(x0 + W, y0 + D - r); shape.quadraticCurveTo(x0 + W, y0 + D, x0 + W - r, y0 + D);
   shape.lineTo(x0 + r, y0 + D); shape.quadraticCurveTo(x0, y0 + D, x0, y0 + D - r); shape.lineTo(x0, y0 + r); shape.quadraticCurveTo(x0, y0, x0 + r, y0);
-  const slabGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 8 });
+  const slabGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: prof.bevel, curveSegments: prof.curve });
   slabGeo.rotateX(-Math.PI / 2);
-  const topGeo = new THREE.ShapeGeometry(shape, 8);
+  const topGeo = new THREE.ShapeGeometry(shape, prof.curve);
   topGeo.rotateX(-Math.PI / 2);
   { // ShapeGeometry UVs are in shape units; remap them to 0..1 for the texture.
     const uv = topGeo.attributes.uv;
@@ -54,7 +50,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   }
   const haloGeo = new THREE.PlaneGeometry(W * 1.9, D * 2.1);
   haloGeo.rotateX(-Math.PI / 2);
-  const outline = new THREE.BufferGeometry().setFromPoints(shape.getPoints(12).map((p) => new THREE.Vector3(p.x, 0.1, -p.y)));
+  const outline = new THREE.BufferGeometry().setFromPoints(shape.getPoints(prof.outline).map((p) => new THREE.Vector3(p.x, 0.1, -p.y)));
 
   const sprite = (size: number, stops: [number, number][]) => {
     const c = document.createElement("canvas"); c.width = c.height = size;
@@ -63,14 +59,14 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     g.fillStyle = gr; g.fillRect(0, 0, size, size);
     return new THREE.CanvasTexture(c);
   };
-  const haloTex = sprite(128, [[0, 0.55], [0.45, 0.16], [1, 0]]);
-  const dotTex = sprite(32, [[0, 1], [0.35, 0.6], [1, 0]]);
+  const haloTex = sprite(prof.halo, [[0, 0.55], [0.45, 0.16], [1, 0]]); haloTex.anisotropy = aniso;
+  const dotTex = sprite(prof.dot, [[0, 1], [0.35, 0.6], [1, 0]]); dotTex.anisotropy = aniso;
 
   const slabs = HEX.map((hex, i) => {
     const group = new THREE.Group(), baseY = (2 - i) * GAP;
     group.position.y = baseY;
     const cv = document.createElement("canvas"); cv.width = TEX_W; cv.height = TEX_H;
-    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = aniso;
     const bodyMat = new THREE.MeshBasicMaterial({ color: COL[i], transparent: true, opacity: 0.28, depthWrite: false });
     const topMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
     const haloMat = new THREE.MeshBasicMaterial({ map: haloTex, color: COL[i], transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -87,7 +83,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   tileGeo.rotateX(-Math.PI / 2);
   const makeTiles = (names: string[], cols: number, gapX: number, order: number) => names.map((name, i) => {
     const cv = document.createElement("canvas"); cv.width = TILE_W; cv.height = TILE_H;
-    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = aniso;
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0 });
     const mesh = new THREE.Mesh(tileGeo, mat);
     mesh.position.set(((i % cols) - (cols - 1) / 2) * gapX, 0, (Math.floor(i / cols) - 0.5) * 0.66);
@@ -101,9 +97,17 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
     { list: cards, dim: 0, slab: 0, amount: () => smooth(0.55, 1, fin), hovered: () => S.link },
   ];
 
+  // Paint in the texture's coordinate space, then scale the bitmap so a higher level is actually sharper.
+  const paintInto = (cv: HTMLCanvasElement, w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) => {
+    const s = prof.tex;
+    cv.width = Math.max(2, Math.round(w * s)); cv.height = Math.max(2, Math.round(h * s));
+    const g = cv.getContext("2d")!;
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = s >= 1.5 ? "high" : "medium";
+    g.setTransform(s, 0, 0, s, 0, 0); g.clearRect(0, 0, w, h); draw(g);
+  };
   const paintAll = () => {
-    slabs.forEach((s, i) => { paintLayer(s.cv.getContext("2d")!, i, s.hex); s.tex.needsUpdate = true; });
-    for (const set of sets) set.list.forEach((t, i) => { paintTile(t.cv.getContext("2d")!, t.name, slabs[i % N].hex); t.tex.needsUpdate = true; });
+    slabs.forEach((s, i) => { paintInto(s.cv, TEX_W, TEX_H, (g) => paintLayer(g, i, s.hex)); s.tex.needsUpdate = true; });
+    for (const set of sets) set.list.forEach((t, i) => { paintInto(t.cv, TILE_W, TILE_H, (g) => paintTile(g, t.name, slabs[i % N].hex)); t.tex.needsUpdate = true; });
     kick();
   };
   const retheme = () => {
@@ -120,7 +124,8 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   };
 
   /* shockwaves: two rings that open out from the slab you have just arrived on */
-  const ringGeo = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 72 }, (_, k) => { const a = (k / 72) * Math.PI * 2; return new THREE.Vector3(Math.cos(a), 0, Math.sin(a) * (D / W)); }));
+  const ringN = prof.ring;
+  const ringGeo = new THREE.BufferGeometry().setFromPoints(Array.from({ length: ringN }, (_, k) => { const a = (k / ringN) * Math.PI * 2; return new THREE.Vector3(Math.cos(a), 0, Math.sin(a) * (D / W)); }));
   const rings = [0, 1].map(() => {
     const mat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
     const mesh = new THREE.LineLoop(ringGeo, mat); mesh.visible = false; mesh.renderOrder = 90; stack.add(mesh);
@@ -151,7 +156,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   }
 
   /* packets falling through the layers, tinted by the one they pass */
-  const MAXP = TIERS[0].packets, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3);
+  const MAXP = prof.packets, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3);
   const seed = Array.from({ length: MAXP }, () => ({ x: (Math.random() - 0.5) * (W - 0.8), z: (Math.random() - 0.5) * (D - 0.6), speed: 0.35 + Math.random() * 0.5, off: Math.random() }));
   const pGeo = new THREE.BufferGeometry();
   const posAttr = new THREE.BufferAttribute(pPos, 3), colAttr = new THREE.BufferAttribute(pCol, 3);
@@ -164,7 +169,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   let vw = 1, vh = 1, aspect = 1, nOffX = 0, nOffY = 0, curOffX = NaN, curOffY = NaN;
   const resize = () => {
     vw = innerWidth; vh = innerHeight; aspect = vw / vh;
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, TIERS[tier].dpr)); renderer.setSize(vw, vh, false);
+    const ratio = drawingRatio(S.quality); renderer.setPixelRatio(ratio); renderer.setSize(vw, vh, false); root.dataset.dpr = ratio.toFixed(2);
     camera.aspect = aspect;
     // Keep the stack on the clear side of the viewport: right on wide screens, low on tall ones.
     if (aspect >= 1.05) { nOffX = -vw * 0.22; nOffY = 0; } else { nOffX = 0; nOffY = -vh * 0.28; }
@@ -333,7 +338,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       });
     }
 
-    const count = TIERS[tier].packets, topY = 2 * GAP, span = 4 * GAP, curY = slabs[Math.floor(cur)].group.position.y;
+    const count = MAXP, topY = 2 * GAP, span = 4 * GAP, curY = slabs[Math.floor(cur)].group.position.y;
     for (let i = 0; i < MAXP; i++) {
       const s = seed[i], o = i * 3;
       if (i >= count) { pPos[o + 1] = -999; continue; }
@@ -359,21 +364,21 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
 
   };
 
-  /* ----- adaptive quality ----- */
-  const samples: number[] = []; let warm = 0;
+  // Quality stays where the visitor set it. Only a lost context hands the picture to the CSS stack.
   const giveUp = () => { pause(); onGiveUp(); };
-  const assess = (ms: number) => {
-    if (++warm < 30) return; samples.push(ms); if (samples.length < 80) return;
-    const med = samples.slice().sort((a, b) => a - b)[samples.length >> 1]; samples.length = 0; warm = 0;
-    if (med > 22) { if (tier < TIERS.length - 1) { tier++; resize(); } else giveUp(); }
-  };
   // Run continuously only while something is actually moving: the hero, the overview, a transition,
   // a recent pointer move, a pulse or the Morse lamp.
   const busy = (now: number) => S.explore || ex > 0.001 || S.d < 1.1 || S.f > 0.5 || Math.abs(S.d - dive) > 0.001 || Math.abs(S.f - fin) > 0.001 || Math.abs(S.k - kit) > 0.001 || (S.ready && intro < 1) || Math.abs(vel) > 0.004 || fovKick > 0.01 || rings.some((r) => r.t < 1) || now - lastInput < 1200 || pulse > 0.01 || boost > 0.02 || Math.abs(S.lamp - lamp) > 0.01;
+  let bank = 0;
   const frame = (now: number) => {
     if (!running) return;
     const ms = Math.min(100, Math.max(0, now - last) || 16.7); last = now;
-    update(ms / 1000); renderer.render(scene, camera); assess(ms);
+    // Lower levels draw less often. Explore mode, where you drag the stack, stays at the display rate.
+    const budget = S.explore ? 0 : prof.frameMs;
+    bank += ms;
+    if (bank < budget) { raf = requestAnimationFrame(frame); return; }
+    const step = bank; bank = 0;
+    update(step / 1000); renderer.render(scene, camera);
     if (busy(now) && !paused && !document.hidden) raf = requestAnimationFrame(frame); else running = false;
   };
   function kick() { if (running || paused || dead || document.hidden) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
@@ -464,7 +469,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
       host.removeEventListener("pointerdown", onDown); host.removeEventListener("pointermove", onXMove);
       host.removeEventListener("pointerup", onUp); host.removeEventListener("pointercancel", onUp); host.removeEventListener("wheel", onWheel);
       S.kick = () => {}; S.pulse = () => {}; S.retheme = () => {};
-      renderer.dispose();
+      renderer.dispose(); renderer.forceContextLoss();
     },
   };
 }

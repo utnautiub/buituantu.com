@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
-import { RAIL, useLang } from "../i18n";
+import { RAIL, useLang, type Key } from "../i18n";
+import { QUALITIES, nextQuality, type Quality } from "../lib/quality";
 import { usePrefs } from "../prefs";
 import { Logo } from "./Logo";
 import { S } from "../store";
@@ -11,6 +12,16 @@ import type { Where } from "../lib/useScrollState";
 const NAV: { href: string; key: "nav.1" | "nav.2" | "nav.3" | "nav.4" | "nav.s" | "nav.c" }[] = [
   { href: "l1", key: "nav.1" }, { href: "l2", key: "nav.2" }, { href: "l3", key: "nav.3" }, { href: "l4", key: "nav.4" }, { href: "stack", key: "nav.s" }, { href: "contact", key: "nav.c" },
 ];
+
+/** Drifting specks over the stack. Positions are fixed so a re-render does not restart them. */
+const MOTES: CSSProperties[] = Array.from({ length: 22 }, (_, i) => ({
+  left: `${(i * 43 + 5) % 100}%`,
+  animationDuration: `${16 + (i % 7) * 2.6}s`,
+  animationDelay: `${-(i * 1.15)}s`,
+  width: i % 5 === 0 ? 4 : 2,
+  height: i % 5 === 0 ? 4 : 2,
+  ["--dx" as string]: `${((i * 5) % 13 - 6) * 16}px`,
+}));
 
 export function Nav({ where, bar, onPalette }: { where: Where; bar: RefObject<HTMLDivElement | null>; onPalette: () => void }) {
   const { lang, t, toggle } = useLang();
@@ -45,7 +56,11 @@ export function Nav({ where, bar, onPalette }: { where: Where; bar: RefObject<HT
             <Ico d={p.motion ? "M3 12c2.200-5 4.400-5 6.600 0s4.400 5 6.600 0 3.300-3.800 4.800-1.500" : "M3 12h18"} />
           </button>
           <button className="ibtn ibtn--i wide" onClick={() => p.flip("hud")} aria-pressed={p.hud} aria-label={t("p.hud")} title={`${t("p.hud")}: ${t(p.hud ? "p.on" : "p.off")}`}>
-            <Ico d="M5 20v-5M10 20V9M15 20v-8M20 20V5" />
+            <Ico d={p.hud ? ["M9 4.5H5v4", "M15 4.5h4v4", "M19 15.5v4h-4", "M9 19.5H5v-4", "M8.5 14.5h7"] : ["M9 4.5H5v4", "M15 4.5h4v4", "M19 15.5v4h-4", "M9 19.5H5v-4", "M6.5 17.5 17.5 6.5"]} />
+          </button>
+          <button className="ibtn ibtn--i qbtn" data-q={p.quality} onClick={() => p.setQuality(nextQuality(p.quality))} aria-label={`${t("p.quality")}: ${t(`q.${p.quality}` as Key)}`} title={`${t("p.quality")}: ${t(`q.${p.quality}` as Key)}`}>
+            <Ico d={QMARK} />
+            <span>{QWORD[p.quality]}</span>
           </button>
         </div>
       </div>
@@ -74,21 +89,24 @@ export function Depth({ where, focus, onFocus }: { where: Where; focus: number; 
 }
 
 /** The fixed 3D backdrop, with a CSS version of the stack underneath for when WebGL is not available. */
-export function Stage({ where, focus }: { where: Where; focus: number }) {
+export function Stage({ where, focus, quality }: { where: Where; focus: number; quality: Quality }) {
   const canvas = useRef<HTMLCanvasElement>(null), aurora = useRef<HTMLCanvasElement>(null);
   useEffect(() => initAurora(aurora.current!), []);
   useEffect(() => {
-    const root = document.documentElement, off = () => { delete root.dataset.gl; };
+    S.quality = quality;
+    const root = document.documentElement, off = () => { delete root.dataset.gl; delete root.dataset.dpr; };
     let scene: { dispose(): void } | null = null, dead = false;
     createLayerScene(canvas.current!, off)
       .then((s) => { if (dead) s.dispose(); else { scene = s; root.dataset.gl = "on"; } })
       .catch((e) => { console.warn("3D scene unavailable, using the CSS stack", e); off(); });
-    return () => { dead = true; scene?.dispose(); off(); };
-  }, []);
+    return () => { dead = true; scene?.dispose(); };
+  }, [quality]);
   return (
     <div className="stage" aria-hidden="true">
       <canvas className="aurora" ref={aurora} />
-      <canvas className="gl" ref={canvas} />
+      <div className="wash" />
+      <div className="wash wash--b" />
+      <canvas className="gl" key={quality} ref={canvas} />
       <div className="cstack-wrap">
         <div className={`cstack${focus >= 0 ? " has-focus" : ""}`}>
           {[4, 3, 2, 1, 0].map((layer, j) => (
@@ -98,11 +116,20 @@ export function Stage({ where, focus }: { where: Where; focus: number }) {
           ))}
         </div>
       </div>
+      <div className="motes" aria-hidden="true">{MOTES.map((style, i) => <span key={i} style={style} />)}</div>
+      <div className="grain" />
     </div>
   );
 }
 
-const Ico = ({ d }: { d: string }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.900" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
+const QMARK = ["M4.5 6.2h15v11.6h-15z", "M4.5 14.8 8.7 10.6l2.6 2.6 2.4-2.4 5.8 5.6", "M9.2 9.5a.9.9 0 1 1-1.8 0 .9.9 0 1 1 1.8 0"] as const;
+const QWORD = { low: "low", mid: "medium", high: "high", ultra: "ultra" } as const;
+
+const Ico = ({ d }: { d: string | readonly string[] }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.900" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {(typeof d === "string" ? [d] : d).map((p) => <path key={p} d={p} />)}
+  </svg>
+);
 
 export const Footer = memo(function Footer() {
   const { t } = useLang();
@@ -118,6 +145,12 @@ export const Footer = memo(function Footer() {
       <div className="wrap">
       <span className="mono">© {new Date().getFullYear()} Bùi Tuấn Tú · buituantu.com · {t("ft.hint")}</span>
       <span className="foot__prefs">
+        <span className="qset" role="group" aria-label={t("p.quality")}>
+          <span className="qset__k">{t("p.quality")}</span>
+          {QUALITIES.map((q) => (
+            <button key={q} type="button" className="tbtn" aria-pressed={p.quality === q} onClick={() => p.setQuality(q)}>{t(`q.${q}` as Key)}</button>
+          ))}
+        </span>
         <button className="tbtn" onClick={() => p.flip("theme")}>{t("p.theme")}: {t(p.theme === "dark" ? "p.dark" : "p.light")}</button>
         <button className="tbtn" aria-pressed={p.motion} onClick={() => p.flip("motion")}>{t("p.motion")} {onoff(p.motion)}</button>
         <button className="tbtn" aria-pressed={p.sound} onClick={() => p.flip("sound")}>{t("p.sound")} {onoff(p.sound)}</button>

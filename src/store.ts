@@ -1,5 +1,6 @@
 // State shared between the page and the 3D scene. It is a plain object on purpose: the scene reads it
 // every frame, and nothing here should cause a React render.
+import type { Quality } from "./lib/quality";
 const mq = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
 
 export const RM = mq("(prefers-reduced-motion: reduce)");
@@ -22,6 +23,8 @@ export const S = {
   link: -1,
   /** true when motion is off, by system setting or by the visitor's own switch */
   rm: RM,
+  /** image quality chosen in settings; the scene is rebuilt when this changes */
+  quality: "ultra" as Quality,
   /** wake the scene up; replaced by the scene once it exists */
   kick: () => {},
   /** flash the current slab */
@@ -30,6 +33,8 @@ export const S = {
   retheme: () => {},
   /** tell the aurora that the layer or theme changed */
   recolor: () => {},
+  /** rebuild the aurora when the quality setting changes */
+  reaurora: () => {},
   /** true once the opening sequence has finished */
   ready: false,
   /** scroll speed in pixels per frame; 0 when the page is still */

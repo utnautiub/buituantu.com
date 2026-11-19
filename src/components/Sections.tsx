@@ -29,11 +29,12 @@ export const Hero = memo(function Hero({ onPalette }: { onPalette: () => void })
   return (
     <section className="sec hero" id="top" data-d="0" data-f="0" data-layer="0" onPointerMove={onMove}>
       <div className="wrap"><div className="col">
+        <div className="bloom" aria-hidden="true" />
         <div className="eyebrow"><span className="flip" key={`${lang}${role}`}>{roles[role % roles.length]}</span><span>· {t("hero.cadet")}</span></div>
         <div className="tilt" ref={tilt}><KineticHeading key={lang} as="h1" parts={HEADLINE[lang]} idle={onHero} wave="load" /></div>
         <R as="p" className="lede" i={6}>{t("hero.lede")}</R>
         <R className="cta" i={7}>
-          <a className="btn btn--p mag" href="#l1">{t("hero.cta")} ↓</a>
+          <a className="btn btn--p mag" href="#l1">{t("hero.cta")} <span className="arr" aria-hidden="true">↓</span></a>
           <button className="btn mag" onClick={onPalette}>{t("hero.term")} <kbd>⌘K</kbd></button>
         </R>
         <R className="cue" i={8}><i /><span>{t("hero.cue")}<b className="cue__x"> · {t("x.dbl")}</b></span></R>
@@ -46,7 +47,7 @@ export const University = memo(function University() {
   const { t } = useLang();
   return (
     <section className="sec" id="l1" data-d="1" data-f="0" data-layer="1">
-      <div className="wrap"><span className="ghost" aria-hidden="true">01</span><div className="col">
+      <div className="wrap"><span className="ghost" data-n="01" aria-hidden="true">01</span><div className="col">
         <R className="tag">L1 · {t("l1.tag")} <em>2021 – 2025</em></R>
         <Scr i={1} text={t("l1.h2")} />
         <R as="p" className="lede" i={2}>{t("l1.lede")}</R>
@@ -72,7 +73,7 @@ export const Work = memo(function Work() {
   useEffect(() => { const on = (e: Event) => { const n = (e as CustomEvent<ExpKey>).detail; setK(n); S.pulse(); sfx.toggle(n === "be"); }; addEventListener("btt:tab", on); return () => removeEventListener("btt:tab", on); }, []);
   return (
     <section className="sec" id="l2" data-d="2" data-f="0" data-layer="2">
-      <div className="wrap"><span className="ghost" aria-hidden="true">02</span><div className="col">
+      <div className="wrap"><span className="ghost" data-n="02" aria-hidden="true">02</span><div className="col">
         <R className="tag">L2 · {t("l2.tag")} <em>12.2023 – 06.2025</em></R>
         <Scr i={1} text="2NF Software" />
         <R as="p" className="lede" i={2}>{t("l2.lede")}</R>
@@ -87,7 +88,7 @@ export const Work = memo(function Work() {
           <div key={k} className="sw" style={{ display: "contents" }}>
             <div className="k"><span>{t("l2.full")}</span><b>{e.when}</b></div>
             <h3>{e.title}</h3>
-            <ul className="list">{e.bullets.map((b) => <li key={b[0]}>{lang === "vi" ? b[1] : b[0]}</li>)}</ul>
+            <ul className="list">{e.bullets.map((b, i) => <li key={b[0]} style={{ "--i": i } as CSSProperties}>{lang === "vi" ? b[1] : b[0]}</li>)}</ul>
             <ul className="chips">{e.skills.map((s) => <li key={s} className="chip">{s}</li>)}</ul>
           </div>
         </R>
@@ -100,7 +101,7 @@ export const Service = memo(function Service() {
   const { t } = useLang();
   return (
     <section className="sec sec--short" id="l3" data-d="3" data-f="0" data-layer="3">
-      <div className="wrap"><span className="ghost" aria-hidden="true">03</span><div className="col">
+      <div className="wrap"><span className="ghost" data-n="03" aria-hidden="true">03</span><div className="col">
         <R className="tag">L3 · {t("l3.tag")}</R>
         <Scr i={1} text={t("l3.h2")} />
         <R as="p" className="lede" i={2}>{t("l3.lede")}</R>
@@ -150,7 +151,7 @@ export const Signal = memo(function Signal() {
 
   return (
     <section className="sec" id="l4" data-d="4" data-f="0" data-layer="4">
-      <div className="wrap"><span className="ghost" aria-hidden="true">04</span><div className="col">
+      <div className="wrap"><span className="ghost" data-n="04" aria-hidden="true">04</span><div className="col">
         <R className="tag">L4 · {t("l4.tag")} <em>{t("l4.now")}</em></R>
         <Scr i={1} text={t("l4.h2")} />
         <R as="p" className="lede" i={2}>{t("l4.lede")}</R>

@@ -60,8 +60,8 @@ export const ROLES: Record<"en" | "vi", string[]> = {
 /** Headline words. 1 marks the gradient words, "\n" forces a line break. */
 export type Part = [word: string, grad: 0 | 1];
 export const HEADLINE: Record<"en" | "vi", Part[]> = {
-  en: [["Creating", 0], ["with", 0], ["code.", 0], ["Small", 1], ["details", 1], ["matter.", 0]],
-  vi: [["Sáng", 0], ["tạo", 0], ["bằng", 0], ["code.", 0], ["Chi", 1], ["tiết", 1], ["nhỏ", 1], ["tạo", 0], ["nên", 0], ["khác", 0], ["biệt.", 0]],
+  en: [["Bùi", 0], ["Tuấn", 1], ["Tú", 1]],
+  vi: [["Bùi", 0], ["Tuấn", 1], ["Tú", 1]],
 };
 export const SIGNOFF: Record<"en" | "vi", Part[]> = {
   en: [["Signal's", 0], ["clear.", 0], ["\n", 0], ["Get", 1], ["in", 1], ["touch.", 1]],

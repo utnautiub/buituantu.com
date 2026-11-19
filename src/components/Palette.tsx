@@ -2,7 +2,8 @@
 // run as a terminal command and answered in the output pane.
 import { memo, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { LINKS, MAIL_B64, TOOLS } from "../data";
-import { useLang } from "../i18n";
+import { useLang, type Key } from "../i18n";
+import { isQuality, nextQuality, type Quality } from "../lib/quality";
 import { usePrefs } from "../prefs";
 import { S } from "../store";
 import { confetti, matrix, party } from "../lib/fx";
@@ -27,7 +28,7 @@ export const Palette = memo(function Palette({ open, onClose, notify, onExplore,
     const places: Record<string, string> = { "/": "top", "~": "top", l0: "top", l1: "l1", l2: "l2", l3: "l3", l4: "l4", tools: "stack", kit: "stack", contact: "contact" };
     switch (c) {
       case "help": return [L("commands:", "các lệnh:"), "  whoami · ls · cat <file> · cd <l0…l4|tools|contact> · pwd · date · echo <text>",
-        "  demo · explore · theme · motion · sound · hud · lang · pulse · morse <text> · email", "  matrix · party · sudo hire me · clear · exit"];
+        "  demo · explore · theme · motion · sound · hud · quality [low|mid|high|ultra] · lang · pulse · morse <text> · email", "  matrix · party · sudo hire me · clear · exit"];
       case "whoami": return ["Bùi Tuấn Tú", L("software engineer · second-degree student, Telecommunications University", "kỹ sư phần mềm · học viên văn bằng 2, Trường Sĩ quan Thông tin")];
       case "ls": return ["about.txt  route.txt  stack.txt  contact.txt"];
       case "pwd": return [`/layers/${S.f > 0.5 ? "overview" : `L${Math.round(S.d)}`}`];
@@ -45,6 +46,12 @@ export const Palette = memo(function Palette({ open, onClose, notify, onExplore,
       case "motion": p.flip("motion"); return [`${t("p.motion")} ${onoff(!p.motion)}`];
       case "sound": p.flip("sound"); return [`${t("p.sound")} ${onoff(!p.sound)}`];
       case "hud": p.flip("hud"); return [`${t("p.hud")} ${onoff(!p.hud)}`];
+      case "quality": {
+        const names: Record<string, Quality> = { low: "low", thap: "low", "thấp": "low", mid: "mid", medium: "mid", tb: "mid", trung: "mid", "trung bình": "mid", "trungbinh": "mid", high: "high", cao: "high", ultra: "ultra", max: "ultra", "cực cao": "ultra", "cuc cao": "ultra", cuccao: "ultra" };
+        const want = arg ? names[arg.toLowerCase()] : nextQuality(p.quality);
+        if (!want || !isQuality(want)) return [`quality: ${L("use low, mid, high or ultra", "dùng thấp, trung bình, cao hoặc cực cao")}`];
+        p.setQuality(want); return [`${t("p.quality")}: ${t(`q.${want}` as Key)}`];
+      }
       case "lang": toggle(); return [lang === "vi" ? "EN" : "VI"];
       case "pulse": S.pulse(); sfx.pulse(); return ["~~~ ▮ ~~~"];
       case "email": return [copyMail(), t("ct.copied")];
@@ -80,6 +87,7 @@ export const Palette = memo(function Palette({ open, onClose, notify, onExplore,
     { label: `${t("p.motion")} ${onoff(p.motion)}`, hint: "motion", group: "set", run: () => p.flip("motion"), keep: true },
     { label: `${t("p.sound")} ${onoff(p.sound)}`, hint: "sound", group: "set", run: () => p.flip("sound"), keep: true },
     { label: `${t("p.hud")} ${onoff(p.hud)}`, hint: "hud", group: "set", run: () => p.flip("hud"), keep: true },
+    { label: `${t("p.quality")}: ${t(`q.${p.quality}` as Key)}`, hint: "quality", group: "set", run: () => p.setQuality(nextQuality(p.quality)), keep: true },
     { label: `${t("pal.lang")} → ${lang === "vi" ? "English" : "Tiếng Việt"}`, hint: "lang", group: "set", run: toggle, keep: true },
     { label: t("pal.copy"), hint: "email", group: "links", run: () => { copyMail(); } },
     ...LINKS.map((l): Cmd => ({ label: l.name, hint: l.handle, group: "links", run: ext(l.href) })),
@@ -95,7 +103,7 @@ export const Palette = memo(function Palette({ open, onClose, notify, onExplore,
     { label: "matrix", hint: "⏎", group: "fun", run: () => runTerm("matrix") },
     { label: "party", hint: "⏎", group: "fun", run: () => runTerm("party") },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [lang, p.theme, p.motion, p.sound, p.hud]);
+  ], [lang, p.theme, p.motion, p.sound, p.hud, p.quality]);
 
   const needle = q.trim().toLowerCase();
   const shown = needle ? cmds.filter((c) => `${c.label} ${c.hint}`.toLowerCase().includes(needle)) : cmds;

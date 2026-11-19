@@ -4,6 +4,7 @@ import { initInteractions } from "./lib/interactions";
 import { scrambleAll, settleText } from "./lib/reveal";
 import { initTrail, party, sweep } from "./lib/fx";
 import { setSound, sfx } from "./lib/sound";
+import { isQuality, type Quality } from "./lib/quality";
 import { PrefsCtx, initialPrefs, savePrefs, type Prefs, type PrefsApi } from "./prefs";
 import { S } from "./store";
 import { useScrollState } from "./lib/useScrollState";
@@ -22,6 +23,7 @@ export function App() {
   }), [lang]);
 
   const [prefs, setPrefs] = useState<Prefs>(initialPrefs);
+  S.quality = prefs.quality;
   const prefsApi = useMemo<PrefsApi>(() => ({
     ...prefs,
     flip: (k) => setPrefs((p) => {
@@ -30,12 +32,18 @@ export function App() {
       if (k === "sound") { setSound(n.sound); sfx.toggle(n.sound); } else sfx.toggle(k === "theme" ? n.theme === "light" : (n[k] as boolean));
       return n;
     }),
+    setQuality: (q: Quality) => setPrefs((p) => {
+      if (!isQuality(q) || p.quality === q) return p;
+      const n = { ...p, quality: q };
+      savePrefs(n); sfx.toggle(q === "high" || q === "ultra");
+      return n;
+    }),
   }), [prefs]);
   // Preferences live on <html> so CSS and the scene can both read them.
   useEffect(() => {
     const r = document.documentElement;
-    r.dataset.theme = prefs.theme; r.dataset.motion = prefs.motion ? "on" : "off";
-    S.rm = !prefs.motion; setSound(prefs.sound); S.retheme(); S.recolor(); S.kick();
+    r.dataset.theme = prefs.theme; r.dataset.motion = prefs.motion ? "on" : "off"; r.dataset.quality = prefs.quality;
+    S.quality = prefs.quality; S.rm = !prefs.motion; setSound(prefs.sound); S.reaurora(); S.retheme(); S.recolor(); S.kick();
   }, [prefs]);
 
   const main = useRef<HTMLElement>(null), bar = useRef<HTMLDivElement>(null), ring = useRef<HTMLDivElement>(null), line = useRef<HTMLDivElement>(null);
@@ -78,7 +86,7 @@ export function App() {
     // Double-click (or double-tap) on empty page space opens it too; inside it, a double-click resets the view.
     const onDbl = (e: MouseEvent) => {
       if (document.documentElement.dataset.gl !== "on") return;
-      if ((e.target as Element).closest?.("a,button,input,textarea,.card,.lk,.chip,h1,h2,h3,p,li,.pal,.xui__panel,.xui__bar,.foot")) return;
+      if ((e.target as Element).closest?.("a,button,input,textarea,.card,.lk,.chip,h1,h2,h3,p,li,.pal,.xui__panel,.xui__bar,.foot,.mark")) return;
       getSelection()?.removeAllRanges();
       if (S.explore) S.xreset++; else setExploring(true);
       S.kick();
@@ -140,7 +148,7 @@ export function App() {
     <PrefsCtx.Provider value={prefsApi}><LangCtx.Provider value={api}>
       <a className="skip" href="#main">{api.t("skip")}</a>
       <Boot key={bootKey} onDone={onReady} />
-      <Stage where={where} focus={focus} />
+      <Stage where={where} focus={focus} quality={prefs.quality} />
       <div className="sweep" ref={line} aria-hidden="true" />
       <div className="txglow" aria-hidden="true" />
       <canvas className="trail" ref={trail} aria-hidden="true" />
