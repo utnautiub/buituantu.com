@@ -12,10 +12,12 @@ export function nextQuality(q: Quality): Quality {
 }
 
 export interface QProfile {
-  /** drawing-buffer cap */
+  /** drawing-buffer cap. The canvas covers the whole window, so this stays near the screen's own ratio. */
   dprCap: number;
   /** raise sparse screens up to this, so the steps stay visible on a 1x display */
   dprFloor: number;
+  /** full-window framebuffer budget, in pixels. A large monitor stays at display rate. */
+  px: number;
   aa: boolean;
   packets: number;
   aniso: number;
@@ -37,17 +39,24 @@ export interface QProfile {
   octaves: number;
 }
 
+// Antialiasing stays off at every level. On a full-window transparent canvas it multiplies the
+// pixels the GPU has to fill, and the slabs are large enough that the extra samples barely show.
+// Sharpness comes from the pixel ratio, the textures and the geometry instead.
 export const Q: Record<Quality, QProfile> = {
-  low:   { dprCap: 1,   dprFloor: 1,   aa: false, packets: 12, aniso: 1,  auroraDiv: 5, auroraMs: 70, frameMs: 40, curve: 6,  bevel: 1, outline: 8,  ring: 48,  halo: 64,  dot: 16, tex: 0.75, octaves: 3 },
-  mid:   { dprCap: 1.5, dprFloor: 1.25, aa: false, packets: 28, aniso: 4,  auroraDiv: 3, auroraMs: 48, frameMs: 32, curve: 10, bevel: 2, outline: 16, ring: 72,  halo: 128, dot: 32, tex: 1,    octaves: 3 },
-  high:  { dprCap: 2,   dprFloor: 1.5, aa: true,  packets: 48, aniso: 8,  auroraDiv: 2, auroraMs: 28, frameMs: 16, curve: 16, bevel: 3, outline: 28, ring: 112, halo: 192, dot: 48, tex: 1.5,  octaves: 4 },
-  ultra: { dprCap: 3,   dprFloor: 2,   aa: true,  packets: 72, aniso: 16, auroraDiv: 1, auroraMs: 16, frameMs: 0,  curve: 24, bevel: 4, outline: 48, ring: 160, halo: 256, dot: 64, tex: 2,    octaves: 5 },
+  low:   { dprCap: 1,    dprFloor: 1,    px: 1_800_000, aa: false, packets: 16, aniso: 1,  auroraDiv: 6, auroraMs: 50, frameMs: 0, curve: 6,  bevel: 1, outline: 8,  ring: 48,  halo: 48,  dot: 16, tex: 1,    octaves: 3 },
+  mid:   { dprCap: 1.25, dprFloor: 1.15, px: 2_800_000, aa: false, packets: 28, aniso: 4,  auroraDiv: 5, auroraMs: 40, frameMs: 0, curve: 8,  bevel: 1, outline: 12, ring: 64,  halo: 64,  dot: 24, tex: 1,    octaves: 3 },
+  high:  { dprCap: 1.5,  dprFloor: 1.35, px: 4_000_000, aa: false, packets: 40, aniso: 8,  auroraDiv: 4, auroraMs: 33, frameMs: 0, curve: 12, bevel: 2, outline: 16, ring: 80,  halo: 96,  dot: 32, tex: 1.25, octaves: 3 },
+  ultra: { dprCap: 2,    dprFloor: 1.75, px: 5_500_000, aa: false, packets: 56, aniso: 16, auroraDiv: 3, auroraMs: 33, frameMs: 0, curve: 16, bevel: 2, outline: 24, ring: 96,  halo: 128, dot: 48, tex: 1.5,  octaves: 3 },
 };
 
-/** Pixel ratio for the current level. Ultra always draws at its cap, so it stays sharper than High even on a dense screen. */
+/** Pixel ratio for the current level. Higher levels stay sharper, and a huge monitor is kept inside its pixel budget. */
 export function drawingRatio(q: Quality) {
   const p = Q[q];
-  if (q === "ultra") return p.dprCap;
   const dpr = typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
-  return Math.min(p.dprCap, Math.max(dpr, p.dprFloor));
+  let ratio = Math.min(p.dprCap, Math.max(dpr, p.dprFloor));
+  if (typeof innerWidth === "number" && innerWidth > 0 && innerHeight > 0) {
+    const area = innerWidth * innerHeight * ratio * ratio;
+    if (area > p.px) ratio *= Math.sqrt(p.px / area);
+  }
+  return Math.max(0.75, Math.round(ratio * 100) / 100);
 }

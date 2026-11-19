@@ -21,7 +21,7 @@ export async function createLayerScene(canvas: HTMLCanvasElement, onGiveUp: () =
   const root = document.documentElement;
   const prof = Q[S.quality];
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: prof.aa, powerPreference: prof.aa ? "high-performance" : "default" });
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: prof.aa, powerPreference: "high-performance", stencil: false });
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const aniso = Math.min(renderer.capabilities.getMaxAnisotropy(), prof.aniso);

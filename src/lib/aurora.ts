@@ -33,7 +33,7 @@ const rgb = (hex: string): [number, number, number] => { const n = parseInt(hex.
 
 export function initAurora(canvas: HTMLCanvasElement) {
   // Attributes stay fixed so a quality change can keep this context and only resize it.
-  const gl = canvas.getContext("webgl", { alpha: false, antialias: false, depth: false, powerPreference: "low-power" });
+  const gl = canvas.getContext("webgl", { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" });
   if (!gl) return () => {};
   const sh = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
   const buf = gl.createBuffer();
@@ -75,7 +75,10 @@ export function initAurora(canvas: HTMLCanvasElement) {
   };
   const resize = () => {
     const div = Q[S.quality].auroraDiv;
-    const w = Math.max(2, Math.ceil(innerWidth / div)), h = Math.max(2, Math.ceil(innerHeight / div));
+    let w = Math.max(2, Math.ceil(innerWidth / div)), h = Math.max(2, Math.ceil(innerHeight / div));
+    // A soft wash does not get sharper past a few hundred pixels, and a full-screen shader is what makes the page hitch.
+    const cap = 560, long = Math.max(w, h);
+    if (long > cap) { const s = cap / long; w = Math.max(2, Math.round(w * s)); h = Math.max(2, Math.round(h * s)); }
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, canvas.width, canvas.height); bind(); dirty = true;
   };
